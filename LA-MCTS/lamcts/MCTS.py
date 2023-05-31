@@ -25,7 +25,7 @@ import torch
 class MCTS:
     #############################################
 
-    def __init__(self, lb, ub, dims, ninits, func, Cp = 1, leaf_size = 20, kernel_type = "rbf", gamma_type = "auto"):
+    def __init__(self, lb, ub, dims, ninits, func, Cp = 1, leaf_size = 20, kernel_type = "rbf", gamma_type = "auto", solver_type = 'bo'):
         self.dims                    =  dims
         self.samples                 =  []
         self.nodes                   =  []
@@ -38,13 +38,13 @@ class MCTS:
         self.curt_best_sample        =  None
         self.best_value_trace        =  []
         self.sample_counter          =  0
-        self.visualization           =  False
+        self.visualization           =  False # no effect, visualization is called in unused functions
         
-        self.LEAF_SAMPLE_SIZE        =  leaf_size
+        self.LEAF_SAMPLE_SIZE        =  leaf_size  # number of solutions to collect before splitting aka \theta
         self.kernel_type             =  kernel_type
         self.gamma_type              =  gamma_type
         
-        self.solver_type             = 'bo' #solver can be 'bo' or 'turbo'
+        self.solver_type             = solver_type #solver can be 'bo' or 'turbo'
         
         print("gamma_type:", gamma_type)
         
@@ -108,17 +108,18 @@ class MCTS:
                 #creat two kids, assign the data, and push into lists
                 # children's lb and ub will be decided by its parent
                 assert len(good_kid_data) + len(bad_kid_data) == len(parent.bag)
-                assert len(good_kid_data) > 0
-                assert len(bad_kid_data)  > 0
-                good_kid = Node(parent = parent, dims = self.dims, reset_id = False, kernel_type = self.kernel_type, gamma_type = self.gamma_type )
-                bad_kid  = Node(parent = parent, dims = self.dims, reset_id = False, kernel_type = self.kernel_type, gamma_type = self.gamma_type )
-                good_kid.update_bag( good_kid_data )
-                bad_kid.update_bag(  bad_kid_data  )
-            
-                parent.update_kids( good_kid = good_kid, bad_kid = bad_kid )
-            
-                self.nodes.append(good_kid)
-                self.nodes.append(bad_kid)
+                if len(good_kid_data) == 0 or len(bad_kid_data) == 0:
+                    parent.is_svm_splittable = False
+                else:
+                    good_kid = Node(parent = parent, dims = self.dims, reset_id = False, kernel_type = self.kernel_type, gamma_type = self.gamma_type )
+                    bad_kid  = Node(parent = parent, dims = self.dims, reset_id = False, kernel_type = self.kernel_type, gamma_type = self.gamma_type )
+                    good_kid.update_bag( good_kid_data )
+                    bad_kid.update_bag(  bad_kid_data  )
+
+                    parent.update_kids( good_kid = good_kid, bad_kid = bad_kid )
+
+                    self.nodes.append(good_kid)
+                    self.nodes.append(bad_kid)
                 
             #print("continue split:", self.is_splitable())
         
@@ -242,7 +243,7 @@ class MCTS:
                 if self.solver_type == 'bo':
                     samples = leaf.propose_samples_bo( 1, path, self.lb, self.ub, self.samples )
                 elif self.solver_type == 'turbo':
-                    samples, values = leaf.propose_samples_turbo( 10000, path, self.func )
+                    samples, values = leaf.propose_samples_turbo( 100, path, self.func )
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):

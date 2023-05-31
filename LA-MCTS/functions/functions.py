@@ -16,7 +16,7 @@ class tracker:
         self.counter   = 0
         self.results   = []
         self.curt_best = float("inf")
-        self.foldername = foldername
+        self.foldername = "results/"+foldername
         try:
             os.mkdir(foldername)
         except OSError:
@@ -38,11 +38,12 @@ class tracker:
             self.dump_trace()
 
 class Levy:
-    def __init__(self, dims=10):
+    def __init__(self, dims=10, bb_opt = 'bo'):
         self.dims        = dims
         self.lb          = -10 * np.ones(dims)
         self.ub          =  10 * np.ones(dims)
-        self.tracker     = tracker('Levy'+str(dims))
+        self.bb_opt = bb_opt
+        self.tracker     = tracker('Levy'+str(self.bb_opt)+str(dims))
         
         #tunable hyper-parameters in LA-MCTS
         self.Cp          = 10
@@ -79,12 +80,13 @@ class Levy:
         return result
 
 class Ackley:
-    def __init__(self, dims=10):
+    def __init__(self, dims=10, bb_opt='bo'):
         self.dims      = dims
         self.lb        = -5 * np.ones(dims)
         self.ub        =  10 * np.ones(dims)
         self.counter   = 0
-        self.tracker   = tracker('Ackley'+str(dims) )
+        self.bb_opt = bb_opt
+        self.tracker   = tracker('Ackley'+str(self.bb_opt)+str(dims) )
         
         #tunable hyper-parameters in LA-MCTS
         self.Cp        = 1
@@ -92,7 +94,7 @@ class Ackley:
         self.ninits    = 40
         self.kernel_type = "rbf"
         self.gamma_type  = "auto"
-        
+
         
     def __call__(self, x):
         self.counter += 1
@@ -102,6 +104,37 @@ class Ackley:
         result = (-20*np.exp(-0.2 * np.sqrt(np.inner(x,x) / x.size )) -np.exp(np.cos(2*np.pi*x).sum() /x.size) + 20 +np.e )
         self.tracker.track( result )
                 
+        return result
+
+
+class Rosenbrock:
+    def __init__(self, dims=10, bb_opt='bo'):
+        self.dims = dims
+        self.lb = -10 * np.ones(dims)
+        self.ub = 10 * np.ones(dims)
+        self.counter = 0
+        self.bb_opt = bb_opt
+        self.tracker = tracker('Rosenbrock'+str(self.bb_opt)+str(dims))
+
+        # tunable hyper-parameters in LA-MCTS
+        self.Cp = 10
+        self.leaf_size = 10
+        self.kernel_type = "rbf"
+        self.ninits = 40
+        self.gamma_type = "auto"
+        print("initialize rosenbrock at dims:", self.dims)
+
+
+    def __call__(self, x):
+        self.counter += 1
+        assert len(x) == self.dims
+        assert x.ndim == 1
+        assert np.all(x <= self.ub) and np.all(x >= self.lb)
+
+        result = sum(100.0 * (x[1:] - x[:-1] ** 2.0) ** 2.0 + (1 - x[:-1]) ** 2.0)
+        #result = -1 * result
+        self.tracker.track( result )
+
         return result
         
 class Lunarlanding:

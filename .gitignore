@@ -1,0 +1,16 @@
+# general
+
+__pycache__/
+
+
+
+# 'results' folders 
+
+LA-MCTS/results/*
+!LA-MCTS/results/.gitkeep
+
+LA-MCTS-baselines/Bayesian-Optimization/results/*
+!LA-MCTS-baselines/Bayesian-Optimization/results/.gitkeep
+
+LA-MCTS-baselines/Nevergrad/results/*
+!LA-MCTS-baselines/Nevergrad/results/.gitkeep

@@ -20,7 +20,7 @@ from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-# from turbo_1.turbo_1 import Turbo1
+from turbo_1.turbo_1 import Turbo1
 
 
 # the input will be samples!
@@ -35,7 +35,7 @@ class Classifier():
         noise        =   0.1
         m52          =   ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5)
         self.gpr     =   GaussianProcessRegressor(kernel=m52, alpha=noise**2) #default to CPU
-        self.kmean   =   KMeans(n_clusters=2)
+        self.kmean   =   KMeans(n_clusters=2, n_init=10)
         #learned boundary
         self.svm     =   SVC(kernel = kernel_type, gamma=gamma_type)
         #data structures to store
@@ -52,6 +52,8 @@ class Classifier():
     
     def is_splittable_svm(self):
         plabel = self.learn_clusters()
+        if len(set(plabel)) == 1:
+            return False
         self.learn_boundary(plabel)
         svm_label = self.svm.predict( self.X )
         if len( np.unique(svm_label) ) == 1:
@@ -114,9 +116,11 @@ class Classifier():
             X.append(  sample[0] )
             fX.append( sample[1] )
         
-        self.X          = np.asarray(X, dtype=np.float32).reshape(-1, self.dims)
-        self.fX         = np.asarray(fX,  dtype=np.float32).reshape(-1)
-        self.samples    = latest_samples       
+        # self.X          = np.asarray(X, dtype=np.float32).reshape(-1, self.dims)
+        self.X          = np.asarray(X).reshape(-1, self.dims)
+        # self.fX         = np.asarray(fX,  dtype=np.float32).reshape(-1)
+        self.fX         = np.asarray(fX).reshape(-1)
+        self.samples    = latest_samples
         
     def train_gpr(self, samples):
         X  = []
@@ -340,32 +344,32 @@ class Classifier():
     ###########################
     # version 1: select a partition, perform one-time turbo search
 
-    # def propose_samples_turbo(self, num_samples, path, func):
-    #     #throw a uniform sampling in the selected partition
-    #     X_init = self.propose_rand_samples_sobol(30, path, func.lb, func.ub)
-    #     #get samples around the selected partition
-    #     print("sampled ", len(X_init), " for the initialization")
-    #     turbo1 = Turbo1(
-    #         f  = func,              # Handle to objective function
-    #         lb = func.lb,           # Numpy array specifying lower bounds
-    #         ub = func.ub,           # Numpy array specifying upper bounds
-    #         n_init = 30,            # Number of initial bounds from an Latin hypercube design
-    #         max_evals  = num_samples, # Maximum number of evaluations
-    #         batch_size = 1,         # How large batch size TuRBO uses
-    #         verbose=True,           # Print information from each batch
-    #         use_ard=True,           # Set to true if you want to use ARD for the GP kernel
-    #         max_cholesky_size=2000, # When we switch from Cholesky to Lanczos
-    #         n_training_steps=50,    # Number of steps of ADAM to learn the hypers
-    #         min_cuda=1024,          #  Run on the CPU for small datasets
-    #         device="cpu",           # "cpu" or "cuda"
-    #         dtype="float32",        # float64 or float32
-    #         X_init = X_init,
-    #     )
-    #
-    #     proposed_X, fX = turbo1.optimize( )
-    #     fX = fX*-1
-    #
-    #     return proposed_X, fX
+    def propose_samples_turbo(self, num_samples, path, func):
+        #throw a uniform sampling in the selected partition
+        X_init = self.propose_rand_samples_sobol(30, path, func.lb, func.ub)
+        #get samples around the selected partition
+        print("sampled ", len(X_init), " for the initialization")
+        turbo1 = Turbo1(
+            f  = func,              # Handle to objective function
+            lb = func.lb,           # Numpy array specifying lower bounds
+            ub = func.ub,           # Numpy array specifying upper bounds
+            n_init = 30,            # Number of initial bounds from an Latin hypercube design
+            max_evals  = num_samples, # Maximum number of evaluations
+            batch_size = 1,         # How large batch size TuRBO uses
+            verbose=True,           # Print information from each batch
+            use_ard=True,           # Set to true if you want to use ARD for the GP kernel
+            max_cholesky_size=2000, # When we switch from Cholesky to Lanczos
+            n_training_steps=50,    # Number of steps of ADAM to learn the hypers
+            min_cuda=1024,          #  Run on the CPU for small datasets
+            device="cuda" if torch.cuda.is_available() else "cpu",           # "cpu" or "cuda"
+            dtype="float32",        # float64 or float32
+            X_init = X_init,
+        )
+
+        proposed_X, fX = turbo1.optimize( )
+        fX = fX*-1
+
+        return proposed_X, fX
         
     
             
@@ -420,7 +424,10 @@ class Classifier():
         
         self.kmean  = self.kmean.fit(tmp)
         plabel      = self.kmean.predict( tmp )
-        
+
+        if len(set(plabel)) == 1:
+            return plabel
+
         # the 0-1 labels in kmean can be different from the actual
         # flip the label is not consistent
         # 0: good cluster, 1: bad cluster
@@ -447,12 +454,14 @@ class Classifier():
             return good_samples, bad_samples
         
         plabel = self.learn_clusters( )
+        if len(set(plabel)) == 1:
+            return plabel, []
         self.learn_boundary( plabel )
         
         for idx in range(0, len(plabel)):
             if plabel[idx] == 0:
                 #ensure the consistency
-                assert self.samples[idx][-1] - self.fX[idx] <= 1
+                # assert self.samples[idx][-1] - self.fX[idx] <= 1
                 good_samples.append( self.samples[idx] )
                 train_good_samples.append( self.X[idx] )
             else:

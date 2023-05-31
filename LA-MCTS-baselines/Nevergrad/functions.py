@@ -15,7 +15,7 @@ class tracker:
         self.results   = []
         self.curt_best = float("inf")
         self.curt_best_x = None
-        self.foldername = foldername
+        self.foldername = "results/"+foldername
         try:
             os.mkdir(foldername)
         except OSError:
