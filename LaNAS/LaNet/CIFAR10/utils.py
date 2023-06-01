@@ -14,7 +14,6 @@ from copy import deepcopy
 from auto_augment import *
 
 
-
 class AverageMeter:
 
     def __init__(self):
@@ -110,10 +109,8 @@ def _data_transforms_cifar10(args):
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
 
-
     if args.cutout:
         train_transform.transforms.append(Cutout(args.cutout_length))
-
 
     valid_transform = transforms.Compose([
         transforms.ToTensor(),
@@ -146,7 +143,6 @@ def _auto_data_transforms_cifar10(args):
     :return:
     """
 
-
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
 
@@ -164,17 +160,15 @@ def _auto_data_transforms_cifar10(args):
         train_transform.append(Cutout(args.cutout_length))
 
     train_transform.extend([transforms.ToTensor(),
-                                       transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
+                            transforms.Normalize(CIFAR_MEAN, CIFAR_STD), ])
 
     train_transform = transforms.Compose(train_transform)
-
 
     valid_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
     return train_transform, valid_transform
-
 
 
 def save(model, model_path):
@@ -235,6 +229,7 @@ class ModelEma:
     GPU assignment and distributed training wrappers.
     I've tested with the sequence in my own train.py for torch.DataParallel, apex.DDP, and single-GPU.
     """
+
     def __init__(self, model, decay=0.9999, device='', resume=''):
         # make a copy of the model for accumulating moving average of weights
         self.ema = deepcopy(model)

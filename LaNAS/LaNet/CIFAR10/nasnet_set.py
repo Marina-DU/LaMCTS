@@ -8,13 +8,12 @@ from collections import namedtuple
 import math
 import json
 import os
-Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
+Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
 Max_node = 6
 
 root = [[0 for col in range(4)] for row in range(Max_node)]
-
 
 
 def gen_code_from_list(sample, node_num=6):
@@ -28,12 +27,10 @@ def gen_code_from_list(sample, node_num=6):
     return node
 
 
-
 operations = ['sep_conv_3x3',
-    'max_pool_3x3',
-    'skip_connect',
-    'sep_conv_5x5']
-
+              'max_pool_3x3',
+              'skip_connect',
+              'sep_conv_5x5']
 
 
 def gen_all_nets(max_node=Max_node):
@@ -41,7 +38,7 @@ def gen_all_nets(max_node=Max_node):
     all_connections = []
     for i in range(max_node):
         connections = []
-        for j in range(i+2):
+        for j in range(i + 2):
             connections.append(j)
         all_connections.append(connections)
     b = [[] for i in range(max_node)]
@@ -71,7 +68,6 @@ def gen_all_nets(max_node=Max_node):
     print(len(block))
 
     return block
-
 
 
 def edit_distance(net_1, net_2):
@@ -169,10 +165,9 @@ def gen_code(max_node=Max_node):
                 normal_node[i][j] = random.randint(0, len(operations) - 1)
                 reduction_node[i][j] = random.randint(0, len(operations) - 1)
             else:
-                normal_node[i][j] = random.randint(0, i+1)
-                reduction_node[i][j] = random.randint(0, i+1)
+                normal_node[i][j] = random.randint(0, i + 1)
+                reduction_node[i][j] = random.randint(0, i + 1)
         # print(get_node_depth(normal_node[i], normal_node))
-
 
     concat_code = [normal_node, reduction_node]
     return concat_code
@@ -195,7 +190,6 @@ def get_node_depth(cur_node, node_code):
 
 
 def split_and_output(net_code, splitted_num=500, to_file=False):
-
     sample = int(len(net_code) / splitted_num)
     gpu_nodes = [[] for i in range(splitted_num)]
     for i in range(splitted_num):
@@ -203,7 +197,6 @@ def split_and_output(net_code, splitted_num=500, to_file=False):
     remainer = net_code[splitted_num * sample:]
     for i in range(len(remainer)):
         gpu_nodes[i].append(remainer[i])
-
 
     for i in range(splitted_num):
         path = './gpu_files/' + 'gpu' + str(i)
@@ -215,6 +208,7 @@ def split_and_output(net_code, splitted_num=500, to_file=False):
             outfile = './gpu_files/' + 'gpu' + str(i) + '/splitted_lstm_dataset'
             with open(outfile, 'w') as json_data:
                 json.dump(gpu_nodes[i], json_data)
+
 
 def load_from_file(id=0):
     outfile = 'gpu' + str(id) + '.txt'
@@ -228,7 +222,6 @@ def load_from_file(id=0):
     return net_list
 
 
-
 def translator(code, max_node=6):
     # input: code type
     # output: geno type
@@ -236,13 +229,13 @@ def translator(code, max_node=6):
     normal = []
     normal_concat = []
     reduce_concat = []
-    for i in range(max_node+2):
+    for i in range(max_node + 2):
         normal_concat.append(i)
         reduce_concat.append(i)
     reduce = []
 
     for cell in range(len(code)):
-        if cell == 0: # for normal cell
+        if cell == 0:  # for normal cell
             for block in range(len(code[cell])):
                 normal.append((operations[code[cell][block][0]], code[cell][block][2]))
                 normal.append((operations[code[cell][block][1]], code[cell][block][3]))
@@ -251,7 +244,7 @@ def translator(code, max_node=6):
                 if code[cell][block][3] in normal_concat:
                     normal_concat.remove(code[cell][block][3])
 
-        else: # for reduction cell
+        else:  # for reduction cell
             for block in range(len(code[cell])):
                 reduce.append((operations[code[cell][block][0]], code[cell][block][2]))
                 reduce.append((operations[code[cell][block][1]], code[cell][block][3]))
@@ -269,4 +262,3 @@ def translator(code, max_node=6):
 
     # print(normal, normal_concat, reduce, reduce_concat)
     return gen_type
-

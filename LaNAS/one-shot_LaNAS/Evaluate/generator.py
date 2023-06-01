@@ -30,6 +30,7 @@ def supernet_generator(node, layer_type):
                 supernet[i].append(disconnected_vec.copy())
     return supernet
 
+
 def mask_specific_value(supernet, node_id, input_id, operation_id):
     supernet[node_id][input_id][operation_id] = 0.0
     return supernet
@@ -40,7 +41,6 @@ def selected_specific_value(supernet, node_id, input_id, operation_id):
         if i != operation_id:
             supernet[node_id][input_id][i] = 0.0
     return supernet
-
 
 
 def name_compression_encoder(uncompressed_supernet, layer_type):
@@ -59,6 +59,7 @@ def name_compression_encoder(uncompressed_supernet, layer_type):
                     if supernet[i][j] == mix_operator[p]:
                         supernet[i][j] = p
     return supernet
+
 
 def name_compression_decoder(compressed_supernet, layer_type):
     supernet = copy.deepcopy(compressed_supernet)
@@ -92,7 +93,6 @@ def layer_type_encoder(layer_type):
 
 
 def random_net_generator(supernet, numbers):
-
     avail_node = []
     for i in range(len(supernet)):
         for j in range(len(supernet[i])):
@@ -127,10 +127,8 @@ def resume_net_from_file(path):
     return network
 
 
-
 supernet_normal = supernet_generator(node, layer_type)
 supernet_normal = mask_specific_value(supernet_normal, 0, 0, 1)
 
 supernet_reduce = supernet_generator(node, layer_type)
 supernet_reduce = mask_specific_value(supernet_reduce, 0, 0, 1)
-

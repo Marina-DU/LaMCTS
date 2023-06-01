@@ -49,21 +49,21 @@ class TurboM(Turbo1):
     """
 
     def __init__(
-        self,
-        f,
-        lb,
-        ub,
-        n_init,
-        max_evals,
-        n_trust_regions,
-        batch_size=1,
-        verbose=True,
-        use_ard=True,
-        max_cholesky_size=2000,
-        n_training_steps=50,
-        min_cuda=1024,
-        device="cpu",
-        dtype="float64",
+            self,
+            f,
+            lb,
+            ub,
+            n_init,
+            max_evals,
+            n_trust_regions,
+            batch_size=1,
+            verbose=True,
+            use_ard=True,
+            max_cholesky_size=2000,
+            n_training_steps=50,
+            min_cuda=1024,
+            device="cpu",
+            dtype="float64",
     ):
         self.n_trust_regions = n_trust_regions
         super().__init__(

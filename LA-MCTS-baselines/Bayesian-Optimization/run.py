@@ -14,16 +14,15 @@ parser.add_argument('--func', help='specify the test function')
 parser.add_argument('--dims', type=int, help='specify the problem dimensions')
 parser.add_argument('--iterations', type=int, help='specify the iterations to collect in the search')
 
-
 args = parser.parse_args()
 
 f = None
 iteration = 0
 if args.func == 'ackley':
     assert args.dims > 0
-    f = Ackley(dims =args.dims)
+    f = Ackley(dims=args.dims)
 elif args.func == 'levy':
-    f = Levy(dims = args.dims)
+    f = Levy(dims=args.dims)
 else:
     print('function not defined')
     os._exit(1)
@@ -36,13 +35,13 @@ lower = f.lb
 upper = f.ub
 
 bounds = []
-for idx in range(0, len(f.lb) ):
-    bounds.append( ( float(f.lb[idx]), float(f.ub[idx])) )
+for idx in range(0, len(f.lb)):
+    bounds.append((float(f.lb[idx]), float(f.ub[idx])))
 
-res = gp_minimize(f,                          # the function to minimize
-                  bounds,                     # the bounds on each dimension of x
-                  acq_func="EI",              # the acquisition function
+res = gp_minimize(f,  # the function to minimize
+                  bounds,  # the bounds on each dimension of x
+                  acq_func="EI",  # the acquisition function
                   n_calls=args.iterations,
-                  acq_optimizer = "sampling", # using sampling to be consisent with our BO implementation
+                  acq_optimizer="sampling",  # using sampling to be consisent with our BO implementation
                   n_initial_points=40
                   )

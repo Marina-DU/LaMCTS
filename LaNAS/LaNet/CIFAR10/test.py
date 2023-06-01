@@ -17,8 +17,6 @@ from torch.utils.data.dataset import Subset
 import logging
 from nasnet_set import *
 
-
-
 parser = argparse.ArgumentParser("cifar10")
 parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
 parser.add_argument('--batch_size', type=int, default=96, help='batch size')
@@ -40,22 +38,13 @@ parser.add_argument('--arch', type=str, default='', help='which architecture to 
 parser.add_argument('--checkpoint', type=str, default='', help='load from checkpoint')
 parser.add_argument('--save', type=str, default='EXP', help='experiment name')
 
-
-
-
-
 args = parser.parse_args()
-
 
 net = eval(args.arch)
 print(net)
 code = gen_code_from_list(net, node_num=int((len(net) / 4)))
 genotype = translator([code, code], max_node=int((len(net) / 4)))
 print(genotype)
-
-
-
-
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -65,16 +54,13 @@ fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
 
-
 def main():
-
     torch.cuda.set_device(args.gpu)
     cudnn.benchmark = True
     cudnn.enabled = True
 
     logging.info('gpu device = %d' % args.gpu)
     logging.info("args = %s", args)
-
 
     model = Network(args.init_ch, 10, args.layers, True, genotype).cuda()
 
@@ -84,7 +70,6 @@ def main():
     model.load_state_dict(checkpoint['model_state_dict'])
     criterion = nn.CrossEntropyLoss().cuda()
 
-
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
 
@@ -93,21 +78,15 @@ def main():
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
 
-
-
-
     valid_queue = torch.utils.data.DataLoader(
-            dset.CIFAR10(root=args.data, train=False, transform=valid_transform),
-            batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
-
+        dset.CIFAR10(root=args.data, train=False, transform=valid_transform),
+        batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
 
     valid_acc, valid_obj = infer(valid_queue, model, criterion)
     logging.info('valid_acc: %f', valid_acc)
 
 
-
 def infer(valid_queue, model, criterion):
-
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
@@ -127,14 +106,10 @@ def infer(valid_queue, model, criterion):
             top1.update(prec1.item(), n)
             top5.update(prec5.item(), n)
 
-
         if step % args.report_freq == 0:
             logging.info('>>Validation: %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
 
-
-
     return top1.avg, objs.avg
-
 
 
 if __name__ == '__main__':

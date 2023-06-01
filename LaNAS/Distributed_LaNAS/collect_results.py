@@ -7,7 +7,7 @@ import json
 import os
 import operator
 
-total_trace  = {}
+total_trace = {}
 for i in range(1, 800):
     path = 'client' + str(i) + '/' + 'acc_trace.json'
     if os.path.exists(path):
@@ -18,7 +18,4 @@ for i in range(1, 800):
 
 with open('total_trace.json', 'w') as outfile:
     json.dump(total_trace, outfile)
-print("total element:", len(total_trace) )
-
-
-
+print("total element:", len(total_trace))

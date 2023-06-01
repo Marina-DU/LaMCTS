@@ -3,8 +3,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # 
-import  torch
-import  torch.nn as nn
+import torch
+import torch.nn as nn
 from operations import *
 
 
@@ -68,6 +68,7 @@ class Cell(nn.Module):
             states += [s]
         return torch.cat([states[i] for i in self._concat], dim=1)
 
+
 def drop_path(x, drop_prob):
     if drop_prob > 0.:
         keep_prob = 1. - drop_prob
@@ -80,8 +81,6 @@ def drop_path(x, drop_prob):
             mask = torch.cuda.HalfTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
             x.mul_(mask)
     return x
-
-
 
 
 class AuxiliaryHeadCIFAR(nn.Module):
@@ -155,14 +154,3 @@ class NetworkCIFAR(nn.Module):
         out = self.global_pooling(s1)
         logits = self.classifier(out.view(out.size(0), -1))
         return logits, logits_aux
-
-
-
-
-
-
-
-
-
-
-

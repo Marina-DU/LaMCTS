@@ -8,15 +8,11 @@ from functions.mujoco_functions import *
 from lamcts import MCTS
 import argparse
 
-
-
-
 parser = argparse.ArgumentParser(description='Process inputs')
 parser.add_argument('--func', help='specify the test function')
 parser.add_argument('--dims', type=int, help='specify the problem dimensions')
 parser.add_argument('--iterations', type=int, help='specify the iterations to collect in the search')
 parser.add_argument('--bb-optimizer', type=str, help='specify the black-box optimizer to use', default='bo')
-
 
 args = parser.parse_args()
 
@@ -24,14 +20,14 @@ f = None
 iteration = 0
 if args.func == 'ackley':
     assert args.dims > 0
-    f = Ackley(dims =args.dims, bb_opt=args.bb_optimizer)
+    f = Ackley(dims=args.dims, bb_opt=args.bb_optimizer)
 elif args.func == 'levy':
     assert args.dims > 0
-    f = Levy(dims = args.dims, bb_opt=args.bb_optimizer)
+    f = Levy(dims=args.dims, bb_opt=args.bb_optimizer)
 elif args.func == 'rosenbrock':
     assert args.dims > 0
-    f = Rosenbrock(dims = args.dims, bb_opt=args.bb_optimizer)
-elif args.func == 'lunar': 
+    f = Rosenbrock(dims=args.dims, bb_opt=args.bb_optimizer)
+elif args.func == 'lunar':
     f = Lunarlanding()
 elif args.func == 'swimmer':
     f = Swimmer()
@@ -44,7 +40,6 @@ else:
 assert f is not None
 assert args.iterations > 0
 
-
 # f = Ackley(dims = 10)
 # f = Levy(dims = 10)
 # f = Swimmer()
@@ -52,19 +47,19 @@ assert args.iterations > 0
 # f = Lunarlanding()
 
 agent = MCTS(
-             lb = f.lb,              # the lower bound of each problem dimensions
-             ub = f.ub,              # the upper bound of each problem dimensions
-             dims = f.dims,          # the problem dimensions
-             ninits = f.ninits,      # the number of random samples used in initializations 
-             func = f,               # function object to be optimized
-             Cp = f.Cp,              # Cp for MCTS
-             leaf_size = f.leaf_size, # tree leaf size
-             kernel_type = f.kernel_type, #SVM configruation
-             gamma_type = f.gamma_type,    #SVM configruation
-             solver_type = f.bb_opt
-             )
+    lb=f.lb,  # the lower bound of each problem dimensions
+    ub=f.ub,  # the upper bound of each problem dimensions
+    dims=f.dims,  # the problem dimensions
+    ninits=f.ninits,  # the number of random samples used in initializations
+    func=f,  # function object to be optimized
+    Cp=f.Cp,  # Cp for MCTS
+    leaf_size=f.leaf_size,  # tree leaf size
+    kernel_type=f.kernel_type,  # SVM configruation
+    gamma_type=f.gamma_type,  # SVM configruation
+    solver_type=f.bb_opt
+)
 
-agent.search(iterations = args.iterations)
+agent.search(iterations=args.iterations)
 
 """
 FAQ:

@@ -9,24 +9,23 @@ import torch.nn.functional as F
 
 OPS = {
     'avg_pool_3x3': lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
-    'max_pool_2x2' : lambda C, stride, affine: nn.MaxPool2d(2, stride=stride, padding=0),
+    'max_pool_2x2': lambda C, stride, affine: nn.MaxPool2d(2, stride=stride, padding=0),
     'max_pool_3x3': lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1),
     'max_pool_5x5': lambda C, stride, affine: nn.MaxPool2d(5, stride=stride, padding=2),
     'skip_connect': lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
     'sep_conv_3x3': lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
     'sep_conv_5x5': lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
     'sep_conv_7x7': lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
-    'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
-    'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
-    'conv_1x1' : lambda C, stride, affine: nn.Conv2d(C, C, (1,1), stride=(stride, stride), padding=(0,0), bias=False),
-    'conv_3x3' : lambda C, stride, affine: nn.Conv2d(C, C, (3,3), stride=(stride, stride), padding=(1,1), bias=False),
-    'conv_5x5' : lambda C, stride, affine: nn.Conv2d(C, C, (5,5), stride=(stride, stride), padding=(2,2), bias=False),
+    'dil_conv_3x3': lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
+    'dil_conv_5x5': lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
+    'conv_1x1': lambda C, stride, affine: nn.Conv2d(C, C, (1, 1), stride=(stride, stride), padding=(0, 0), bias=False),
+    'conv_3x3': lambda C, stride, affine: nn.Conv2d(C, C, (3, 3), stride=(stride, stride), padding=(1, 1), bias=False),
+    'conv_5x5': lambda C, stride, affine: nn.Conv2d(C, C, (5, 5), stride=(stride, stride), padding=(2, 2), bias=False),
 }
 
 
 class ReLUConvBN(nn.Module):
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-
         super(ReLUConvBN, self).__init__()
 
         self.op = nn.Sequential(
@@ -38,17 +37,18 @@ class ReLUConvBN(nn.Module):
     def forward(self, x):
         return self.op(x)
 
+
 class Conv2d(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True):
         super(Conv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, groups, bias)
+                                     padding, dilation, groups, bias)
 
     def forward(self, x):
         weight = self.weight
         weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                  keepdim=True).mean(dim=3, keepdim=True)
+                                                            keepdim=True).mean(dim=3, keepdim=True)
         weight = weight - weight_mean
         std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
         weight = weight / std.expand_as(weight)
@@ -105,7 +105,6 @@ class DilConv(nn.Module):
 class FactorizedReduce(nn.Module):
 
     def __init__(self, C_in, C_out, affine=True):
-
         super(FactorizedReduce, self).__init__()
 
         assert C_out % 2 == 0
@@ -121,14 +120,3 @@ class FactorizedReduce(nn.Module):
         out = torch.cat([self.conv_1(x), self.conv_2(x[:, :, 1:, 1:])], dim=1)
         out = self.bn(out)
         return out
-
-
-
-
-
-
-
-
-
-
-

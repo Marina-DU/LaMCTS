@@ -3,22 +3,22 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # 
-import  os
-import  sys
-import  time
-import  glob
-import  numpy as np
-import  torch
-import  utils
-import  logging
-import  argparse
-import  torch.nn as nn
-import  genotypes
-import  torch.utils
-import  torchvision.datasets as dset
-import  torch.backends.cudnn as cudnn
+import os
+import sys
+import time
+import glob
+import numpy as np
+import torch
+import utils
+import logging
+import argparse
+import torch.nn as nn
+import genotypes
+import torch.utils
+import torchvision.datasets as dset
+import torch.backends.cudnn as cudnn
 
-from    model import NetworkCIFAR as Network
+from model import NetworkCIFAR as Network
 
 parser = argparse.ArgumentParser("cifar10")
 parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
@@ -57,10 +57,7 @@ fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
 
-
 def main():
-
-
     np.random.seed(args.seed)
     torch.cuda.set_device(args.gpu)
     cudnn.benchmark = True
@@ -106,8 +103,6 @@ def main():
         logging.info('epoch %d lr %e', epoch, scheduler.get_lr()[0])
         model.drop_path_prob = args.drop_path_prob * epoch / args.epochs
 
-
-
         valid_acc, valid_obj = infer(valid_queue, model, criterion)
         logging.info('valid_acc: %f', valid_acc)
 
@@ -119,18 +114,14 @@ def main():
         torch.save(model, os.path.join(args.save, 'trained.pt'))
         print('current best acc is', best_acc)
 
-
         train_acc, train_obj = train(train_queue, model, criterion, optimizer)
         logging.info('train_acc: %f', train_acc)
-
-
 
         # utils.save(model, os.path.join(args.save, 'trained.pt'))
         print('saved to: trained.pt')
 
 
 def train(train_queue, model, criterion, optimizer):
-
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
@@ -163,7 +154,6 @@ def train(train_queue, model, criterion, optimizer):
 
 
 def infer(valid_queue, model, criterion):
-
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()

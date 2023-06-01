@@ -15,20 +15,23 @@ layer_type = [
     'sep_conv_5x5'
 ]
 
+
 def check_avail(net, node=5):
     is_avail = True
     base = 0
     for i in range(node):
-        if sum(net[base : base + (i+2) * 4]) != 2:
+        if sum(net[base: base + (i + 2) * 4]) != 2:
             is_avail = False
-        base += (i+2) * 4
+        base += (i + 2) * 4
     return is_avail
+
 
 def create_index_list(nums, shift=0):
     index_list = []
     for i in range(nums):
-        index_list.append(i+shift)
+        index_list.append(i + shift)
     return index_list
+
 
 def zero_supernet_generator(node, layer_type, is_int=False):
     vec_length = len(layer_type)
@@ -47,7 +50,8 @@ def zero_supernet_generator(node, layer_type, is_int=False):
                 for n in range(len(supernet[i][j])):
                     supernet[i][j][n] = int(supernet[i][j][n])
     return supernet
-    
+
+
 def sampled_nets_generator(based_net, nums=1000):
     nets_dict = {}
     nets_list = []
@@ -60,12 +64,13 @@ def sampled_nets_generator(based_net, nums=1000):
             nets_dict[str(sample)] = 1
             nets_list.append(sample)
     return nets_list
-    
+
+
 def flatten_to_1D_vector(normal, reduce):
     oneD_normal = []
-    oneD_reduce =[]
+    oneD_reduce = []
     for i in range(len(normal)):
-        for j in range(i+2):
+        for j in range(i + 2):
             for n in range(len(normal[i][j])):
                 oneD_normal.append(normal[i][j][n])
                 oneD_reduce.append(reduce[i][j][n])
@@ -76,10 +81,11 @@ def flatten_to_1D_vector(normal, reduce):
 
     return oneD_normal
 
+
 def random_supernet_generator(base_supernet):
     index_list = []
     for i in range(len(base_supernet)):
-        index_list.append(create_index_list((i+2) * 4))
+        index_list.append(create_index_list((i + 2) * 4))
 
     sample_net = copy.deepcopy(base_supernet)
     for i in range(len(base_supernet)):
@@ -89,6 +95,7 @@ def random_supernet_generator(base_supernet):
         sample_net[i][selected_index[1] // 4][selected_index[1] % 4] = 1.0
 
     return sample_net
+
 
 def get_rand_vector(layer_type):
     vec_length = len(layer_type)
@@ -100,15 +107,17 @@ def get_rand_vector(layer_type):
             masked_vec.append(0)
     return masked_vec
 
+
 def mask_rand_generator():
     supernet = [[] for v in range(node)]
     for i in range(node):
         for j in range(node + 2):
             if j < i + 2:
-                supernet[i].append(get_rand_vector(layer_type) )
+                supernet[i].append(get_rand_vector(layer_type))
             else:
                 supernet[i].append(0)
     return supernet
+
 
 def supernet_generator(node, layer_type):
     vec_length = len(layer_type)
@@ -122,60 +131,66 @@ def supernet_generator(node, layer_type):
                 supernet[i].append(0)
     return supernet
 
+
 def mask_specific_value(supernet, node_id, input_id, operation_id):
     supernet[node_id][input_id][operation_id] = 0.0
     return supernet
+
 
 def selected_specific_value(supernet, node_id, input_id, operation_id):
     for i in range(len(supernet[node_id][input_id])):
         if i != operation_id:
             supernet[node_id][input_id][i] = 0.0
     return supernet
-    
+
+
 def encoding_to_masks(encoding):
-    encoding = np.array(encoding).reshape( -1, 4 )
+    encoding = np.array(encoding).reshape(-1, 4)
     supernet_normal = supernet_generator(node, layer_type)
     supernet_reduce = supernet_generator(node, layer_type)
-    supernet        = [supernet_normal, supernet_reduce]
-    mask            = []
-    counter         = 0
+    supernet = [supernet_normal, supernet_reduce]
+    mask = []
+    counter = 0
     for cell in supernet:
         mask_cell = []
         for row in cell:
             mask_row = []
             for col in row:
                 if type(col) == type([]):
-                    mask_row.append( encoding[counter].tolist() )
+                    mask_row.append(encoding[counter].tolist())
                     counter += 1
                 else:
-                    mask_row.append( 0 )
-            mask_cell.append( mask_row )
-        mask.append( mask_cell )
-    
+                    mask_row.append(0)
+            mask_cell.append(mask_row)
+        mask.append(mask_cell)
+
     normal_mask = mask[0]
     reduce_mask = mask[1]
-    
+
     return normal_mask, reduce_mask
+
 
 def supernet_mask():
     supernet_normal = supernet_generator(node, layer_type)
     supernet_reduce = supernet_generator(node, layer_type)
     return supernet_normal, supernet_reduce
 
+
 def encode_supernet():
     supernet_normal = supernet_generator(node, layer_type)
     supernet_reduce = supernet_generator(node, layer_type)
-    supernet        = [supernet_normal, supernet_reduce]
-    
-    layer_types_count = len( layer_type ) 
+    supernet = [supernet_normal, supernet_reduce]
+
+    layer_types_count = len(layer_type)
     count = 0
     assert type(supernet) == type([])
     for cell in supernet:
         for row in cell:
             for col in row:
                 if type(col) == type([]):
-                    count += layer_types_count 
-    return np.ones( (count) ).tolist()
+                    count += layer_types_count
+    return np.ones((count)).tolist()
+
 
 def define_search_space():
     # hit-and-run default
@@ -185,22 +200,23 @@ def define_search_space():
     b = []
     init_point = []
     param_pos = 0
-    for i in range(0, len(search_space) ):
-        tmp = np.zeros( len(search_space) )
+    for i in range(0, len(search_space)):
+        tmp = np.zeros(len(search_space))
         tmp[i] = 1
-        A.append( np.copy(tmp) )
-        b.append( 1.0000001 )
-        #we need relax a little bit here for the precision issue
+        A.append(np.copy(tmp))
+        b.append(1.0000001)
+        # we need relax a little bit here for the precision issue
         # A*x <= 1, we use 1.000+epsilon
         # A*x >= 0, we use 0-epslon
-        A.append( -1*np.copy(tmp) )
-        b.append( 0.0000001 )
-    for i in range(0, len(search_space) ):
+        A.append(-1 * np.copy(tmp))
+        b.append(0.0000001)
+    for i in range(0, len(search_space)):
         if random.random() >= 0.5:
             init_point.append(0.0)
         else:
             init_point.append(1.0)
-    return {"A":np.array(A), "b":np.array(b), "init_point":np.array(init_point) }
+    return {"A": np.array(A), "b": np.array(b), "init_point": np.array(init_point)}
+
 
 supernet_normal = supernet_generator(node, layer_type)
 supernet_reduce = supernet_generator(node, layer_type)

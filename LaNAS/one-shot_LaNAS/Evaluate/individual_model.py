@@ -10,7 +10,6 @@ from operations import *
 from torch.autograd import Variable
 
 
-
 class MixedOp(nn.Module):
     def __init__(self, C, stride, layer_type):
         super(MixedOp, self).__init__()
@@ -27,7 +26,8 @@ class MixedOp(nn.Module):
 
 
 class Cell(nn.Module):
-    def __init__(self, layer_type, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev, supernet_matrix):
+    def __init__(self, layer_type, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev,
+                 supernet_matrix):
         super(Cell, self).__init__()
         self.reduction = reduction
 
@@ -52,7 +52,6 @@ class Cell(nn.Module):
                 op = MixedOp(C, stride, layer_type=op_list)
                 self._ops.append(op)
 
-
     def forward(self, s0, s1, supernet_matrix, drop_prob):
         s0 = self.preprocess0(s0)
         s1 = self.preprocess1(s1)
@@ -71,9 +70,9 @@ class Cell(nn.Module):
                 for hn_index in range(len(H)):
                     if len(op[hn_index]._ops) != 0:
                         if not isinstance(op[hn_index]._ops[0], Identity):
-                        # print(len(op[hn_index]._ops))
-                        # print(op[hn_index]._ops[0])
-                        # print(op[hn_index])
+                            # print(len(op[hn_index]._ops))
+                            # print(op[hn_index]._ops[0])
+                            # print(op[hn_index])
                             H[hn_index] = drop_path(H[hn_index], drop_prob)
 
             s = sum(hn for hn in H)
@@ -81,7 +80,6 @@ class Cell(nn.Module):
             offset += len(states)
             states.append(s)
         return torch.cat(states[-len(supernet_matrix):], dim=1)
-
 
 
 def drop_path(x, drop_prob):
@@ -123,7 +121,8 @@ class AuxiliaryHeadCIFAR(nn.Module):
 
 
 class Network(nn.Module):
-    def __init__(self, supernet_normal, supernet_reduce, layer_type, C, num_classes, layers, auxiliary, steps=4, multiplier=4, stem_multiplier=3):
+    def __init__(self, supernet_normal, supernet_reduce, layer_type, C, num_classes, layers, auxiliary, steps=4,
+                 multiplier=4, stem_multiplier=3):
         super(Network, self).__init__()
         self.supernet_normal = supernet_normal
         self.supernet_reduce = supernet_reduce
@@ -148,10 +147,12 @@ class Network(nn.Module):
             if i in [layers // 3, 2 * layers // 3]:
                 C_curr *= 2
                 reduction = True
-                cell = Cell(self.layer_type, len(self.supernet_reduce), multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.supernet_reduce)
+                cell = Cell(self.layer_type, len(self.supernet_reduce), multiplier, C_prev_prev, C_prev, C_curr,
+                            reduction, reduction_prev, self.supernet_reduce)
             else:
                 reduction = False
-                cell = Cell(self.layer_type, len(self.supernet_normal), multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.supernet_normal)
+                cell = Cell(self.layer_type, len(self.supernet_normal), multiplier, C_prev_prev, C_prev, C_curr,
+                            reduction, reduction_prev, self.supernet_normal)
 
             reduction_prev = reduction
             self.cells += [cell]
@@ -163,8 +164,6 @@ class Network(nn.Module):
             self.auxiliary_head = AuxiliaryHeadCIFAR(C_to_auxiliary, num_classes)
         self.global_pooling = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Linear(C_prev, num_classes)
-
-
 
     def forward(self, input):
 

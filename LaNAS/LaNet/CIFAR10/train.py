@@ -3,19 +3,19 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # 
-import  os
-import  sys
-import  time
-import  glob
-import  numpy as np
-import  torch
-import  utils
-import  logging
-import  argparse
-import  torch.nn as nn
-import  torch.utils
-import  torchvision.datasets as dset
-import  torch.backends.cudnn as cudnn
+import os
+import sys
+import time
+import glob
+import numpy as np
+import torch
+import utils
+import logging
+import argparse
+import torch.nn as nn
+import torch.utils
+import torchvision.datasets as dset
+import torch.backends.cudnn as cudnn
 from nasnet_set import *
 from collections import namedtuple
 import hashlib
@@ -27,9 +27,6 @@ from cutmix.cutmix import CutMix
 from cutmix.utils import CutMixCrossEntropyLoss
 from sklearn.model_selection._split import StratifiedShuffleSplit
 from torch.utils.data.dataset import Subset
-
-
-
 
 parser = argparse.ArgumentParser("cifar10")
 parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
@@ -54,10 +51,6 @@ parser.add_argument('--arch', type=str, default='DARTS', help='which architectur
 parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--save', type=str, default='EXP', help='experiment name')
 
-
-
-
-
 parser.add_argument('--model_ema', action='store_true', default=False,
                     help='Enable tracking moving average of model weights')
 parser.add_argument('--model_ema_force_cpu', action='store_true', default=False,
@@ -68,21 +61,15 @@ parser.add_argument('--model-ema-decay', type=float, default=0.9998,
 parser.add_argument('--track_ema', action='store_true', default=False, help='track ema')
 parser.add_argument('--auto_augment', action='store_true', default=False)
 
-
-
-
-
 args = parser.parse_args()
 args.save = 'checkpoints/auto_aug-1500-{}-{}-{}-{}-{}-{}-{}'.format(args.arch, args.init_ch, args.model_ema,
-                                                         args.model_ema_decay, args.drop_path_prob,
-                                                               args.layers, args.cutout_length)
-
+                                                                    args.model_ema_decay, args.drop_path_prob,
+                                                                    args.layers, args.cutout_length)
 
 print("save path:", args.save)
 
-
 continue_train = False
-if os.path.exists(args.save+'/model.pt'):
+if os.path.exists(args.save + '/model.pt'):
     continue_train = True
 
 if not continue_train:
@@ -96,15 +83,11 @@ fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
 
-
 def flatten_params(model):
-    return torch.sum( torch.cat([param.data.view(-1) for param in model.parameters()], 0))
-
+    return torch.sum(torch.cat([param.data.view(-1) for param in model.parameters()], 0))
 
 
 def main():
-
-
     torch.cuda.set_device(args.gpu)
     cudnn.benchmark = True
     cudnn.enabled = True
@@ -128,9 +111,7 @@ def main():
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
 
-
         criterion = CutMixCrossEntropyLoss(True).cuda()
-
 
         optimizer = torch.optim.SGD(
             model.parameters(),
@@ -162,24 +143,21 @@ def main():
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
 
-        checkpoint = torch.load(args.save+'/model.pt')
+        checkpoint = torch.load(args.save + '/model.pt')
         model.load_state_dict(checkpoint['model_state_dict'])
         cur_epoch = checkpoint['epoch']
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
         if args.model_ema:
-
             model_ema = ModelEma(
                 model,
                 decay=args.model_ema_decay,
                 device='cpu' if args.model_ema_force_cpu else '',
                 resume=args.save + '/model.pt')
 
-
     train_transform, valid_transform = utils._auto_data_transforms_cifar10(args)
 
     ds_train = dset.CIFAR10(root=args.data, train=True, download=True, transform=train_transform)
-
 
     args.cv = -1
     if args.cv >= 0:
@@ -201,14 +179,12 @@ def main():
         dset.CIFAR10(root=args.data, train=False, transform=valid_transform),
         batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
 
-
-
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
 
     best_acc = 0.0
 
     if continue_train:
-        for i in range(cur_epoch+1):
+        for i in range(cur_epoch + 1):
             scheduler.step()
 
     for epoch in range(cur_epoch, args.epochs):
@@ -230,11 +206,11 @@ def main():
         valid_acc, valid_obj = infer(valid_queue, model, criterion)
         logging.info('valid_acc: %f', valid_acc)
 
-
         if valid_acc > best_acc:
             best_acc = valid_acc
             print('this model is the best')
-            torch.save({'epoch': epoch, 'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}, os.path.join(args.save, 'top1.pt'))
+            torch.save({'epoch': epoch, 'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, os.path.join(args.save, 'top1.pt'))
         print('current best acc is', best_acc)
         logging.info('best_acc: %f', best_acc)
 
@@ -245,13 +221,13 @@ def main():
                 os.path.join(args.save, 'model.pt'))
 
         else:
-            torch.save({'epoch': epoch, 'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}, os.path.join(args.save, 'model.pt'))
+            torch.save({'epoch': epoch, 'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, os.path.join(args.save, 'model.pt'))
 
         print('saved to: trained.pt')
 
 
 def train(train_queue, model, criterion, optimizer, epoch, model_ema=None):
-
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
@@ -283,7 +259,6 @@ def train(train_queue, model, criterion, optimizer, epoch, model_ema=None):
         nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
 
-
         if model_ema is not None:
             model_ema.update(model)
 
@@ -294,7 +269,6 @@ def train(train_queue, model, criterion, optimizer, epoch, model_ema=None):
 
 
 def infer(valid_queue, model, criterion, ema=False):
-
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
@@ -314,13 +288,11 @@ def infer(valid_queue, model, criterion, ema=False):
             top1.update(prec1.item(), n)
             top5.update(prec5.item(), n)
 
-
         if step % args.report_freq == 0:
             if not ema:
                 logging.info('>>Validation: %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
             else:
                 logging.info('>>Validation_ema: %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
-
 
     return top1.avg, objs.avg
 

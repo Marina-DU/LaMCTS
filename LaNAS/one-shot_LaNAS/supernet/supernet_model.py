@@ -10,7 +10,6 @@ from .operations import *
 from torch.autograd import Variable
 
 
-
 class MixedOp(nn.Module):
     def __init__(self, C, stride, layer_type):
         super(MixedOp, self).__init__()
@@ -63,7 +62,8 @@ class Cell(nn.Module):
 
 
 class Network(nn.Module):
-    def __init__(self, supernet_normal, supernet_reduce, layer_type, C, num_classes, layers, criterion, steps=4, multiplier=4, stem_multiplier=3):
+    def __init__(self, supernet_normal, supernet_reduce, layer_type, C, num_classes, layers, criterion, steps=4,
+                 multiplier=4, stem_multiplier=3):
         super(Network, self).__init__()
         self.supernet_normal = supernet_normal
         self.supernet_reduce = supernet_reduce
@@ -88,7 +88,8 @@ class Network(nn.Module):
             if i in [layers // 3, 2 * layers // 3]:
                 C_curr *= 2
                 reduction = True
-                cell = Cell(self.layer_type, len(self.supernet_reduce), multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev)
+                cell = Cell(self.layer_type, len(self.supernet_reduce), multiplier, C_prev_prev, C_prev, C_curr,
+                            reduction, reduction_prev)
             else:
                 reduction = False
                 cell = Cell(self.layer_type, steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev)
@@ -100,11 +101,11 @@ class Network(nn.Module):
         self.global_pooling = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Linear(C_prev, num_classes)
 
-    def change_masks(self, normal_mask, reduce_mask):            
+    def change_masks(self, normal_mask, reduce_mask):
         self.supernet_normal = normal_mask
         self.supernet_reduce = reduce_mask
 
-    def forward(self, input):       
+    def forward(self, input):
         s0 = s1 = self.stem(input)
         for i, cell in enumerate(self.cells):
             if not cell.reduction:
@@ -114,4 +115,3 @@ class Network(nn.Module):
         out = self.global_pooling(s1)
         logits = self.classifier(out.view(out.size(0), -1))
         return logits
-

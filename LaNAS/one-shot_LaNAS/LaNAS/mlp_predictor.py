@@ -19,7 +19,7 @@ from torch.autograd import Variable
 import json
 from torch import optim
 import numpy as np
-import random 
+import random
 
 
 class LinearModel(nn.Module):
@@ -38,72 +38,72 @@ class LinearModel(nn.Module):
         self.fc1 = nn.Linear(input_dim, 100)
         self.fc2 = nn.Linear(100, output_dim)
 
-        torch.nn.init.xavier_uniform_( self.fc1.weight )
-        torch.nn.init.xavier_uniform_( self.fc2.weight )
+        torch.nn.init.xavier_uniform_(self.fc1.weight)
+        torch.nn.init.xavier_uniform_(self.fc2.weight)
 
     def weights_init(self):
-        torch.nn.init.xavier_uniform_( self.fc1.weight )
-        torch.nn.init.xavier_uniform_( self.fc2.weight )
+        torch.nn.init.xavier_uniform_(self.fc1.weight)
+        torch.nn.init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x):
         x1 = self.fc1(x)
         x2 = torch.relu(x1)
-        y  = self.fc2(x2)
-        y  = torch.sigmoid(y)
+        y = self.fc2(x2)
+        y = torch.sigmoid(y)
         return y
-        
+
     def train(self, samples):
-        optimiser  = optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08)
-        
+        optimiser = optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08)
+
         X_sample = None
         Y_sample = None
         for sample in samples:
             if X_sample is None or Y_sample is None:
-                X_sample = np.array( json.loads(sample) )
-                Y_sample = np.array( samples[ sample ]  )
+                X_sample = np.array(json.loads(sample))
+                Y_sample = np.array(samples[sample])
             else:
-                X_sample = np.vstack([X_sample, json.loads(sample) ] )
-                Y_sample = np.vstack([Y_sample, samples[ sample ] ] )
+                X_sample = np.vstack([X_sample, json.loads(sample)])
+                Y_sample = np.vstack([Y_sample, samples[sample]])
         batch_size = 100
-        print("dataset:", len(samples) )
-        chunks = int( X_sample.shape[0] / batch_size )
-        if  X_sample.shape[0] % batch_size > 0:
+        print("dataset:", len(samples))
+        chunks = int(X_sample.shape[0] / batch_size)
+        if X_sample.shape[0] % batch_size > 0:
             chunks += 1
         for epoch in range(0, 150):
             X_sample_split = np.array_split(X_sample, chunks)
             Y_sample_split = np.array_split(Y_sample, chunks)
-            #print("epoch=", epoch)
+            # print("epoch=", epoch)
             for i in range(0, chunks):
                 optimiser.zero_grad()
-                inputs = torch.from_numpy( np.asarray(X_sample_split[i], dtype=np.float32).reshape(X_sample_split[i].shape[0], X_sample_split[i].shape[1]) )
-                outputs = self.forward( inputs )
-                loss = nn.MSELoss()(outputs, torch.from_numpy( np.asarray(Y_sample_split[i], dtype=np.float32) ).reshape(-1, 1)  )
-                loss.backward()# back props
+                inputs = torch.from_numpy(
+                    np.asarray(X_sample_split[i], dtype=np.float32).reshape(X_sample_split[i].shape[0],
+                                                                            X_sample_split[i].shape[1]))
+                outputs = self.forward(inputs)
+                loss = nn.MSELoss()(outputs,
+                                    torch.from_numpy(np.asarray(Y_sample_split[i], dtype=np.float32)).reshape(-1, 1))
+                loss.backward()  # back props
                 nn.utils.clip_grad_norm_(self.parameters(), 5)
-                optimiser.step()# update the parameters
-    
-    def propose_networks( self, search_space ):
+                optimiser.step()  # update the parameters
+
+    def propose_networks(self, search_space):
         ''' search space to predict by a meta-DNN for points selection  '''
         networks = []
         for network in search_space.keys():
-            networks.append( json.loads( network ) )
-        X    = np.array( networks )
-        X    = torch.from_numpy( np.asarray(X, dtype=np.float32).reshape(X.shape[0], X.shape[1]) )
-        Y    = self.forward( X )
-        Y    = Y.data.numpy()
-        Y    = Y.reshape( len(networks) )
-        X    = X.data.numpy( )
+            networks.append(json.loads(network))
+        X = np.array(networks)
+        X = torch.from_numpy(np.asarray(X, dtype=np.float32).reshape(X.shape[0], X.shape[1]))
+        Y = self.forward(X)
+        Y = Y.data.numpy()
+        Y = Y.reshape(len(networks))
+        X = X.data.numpy()
         proposed_networks = []
-        n    = 10
+        n = 10
         if Y.shape[0] < n:
             n = Y.shape[0]
         indices = np.argsort(Y)[-n:]
         print("indices:", indices.shape)
         proposed_networks = X[indices]
         return proposed_networks.tolist()
-    
-        
-        
 
 # ####preprocess data####
 # dataset = []
@@ -188,11 +188,3 @@ class LinearModel(nn.Module):
 #         print(network, acc)
 #         del samples[ json.dumps( network.tolist() ) ]
 #         Y_sample = np.vstack([Y_sample, acc] )
-
-
-
-
-
-
-
-
