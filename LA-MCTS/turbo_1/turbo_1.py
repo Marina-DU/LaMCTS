@@ -90,9 +90,6 @@ class Turbo1:
         self.dim = len(lb)
         self.lb = lb
         self.ub = ub
-        print("X_init 1")
-        print(X_init)
-        print("X_init 1")
 
         # Settings
         self.n_init = n_init
@@ -136,10 +133,6 @@ class Turbo1:
         print("===>boundary:", self.boundary)
         # Initialize parameters
         self._restart()
-
-        print("X_init 2")
-        print(X_init)
-        print("X_init 2")
 
     def _restart(self):
         self._X = []
@@ -303,27 +296,17 @@ class Turbo1:
     def optimize(self):
         """Run the full optimization process."""
 
-        print("X_init 3")
-        print(self.X_init)
-        print("X_init 3")
         while self.n_evals < self.max_evals:
             if len(self._fX) > 0 and self.verbose:
                 n_evals, fbest = self.n_evals, self._fX.min()
                 print(f"{n_evals}) Restarting with fbest = {fbest:.4}")
                 sys.stdout.flush()
 
-            print("X_init 4")
-            print(self.X_init)
-            print("X_init 4")
-
             # Initialize parameters
             self._restart()
 
             # Generate and evalute initial design points
             X_init = self.X_init  # self.get_init_samples()
-            print("X_init 5")
-            print(X_init)
-            print("X_init 5")
             # X_init = deepcopy( self.boundary[-1][0].classifier.X )
             # assert ratio == 1
             X_max = np.max(X_init, axis=0)

@@ -13,6 +13,9 @@ parser.add_argument('--func', help='specify the test function')
 parser.add_argument('--dims', type=int, help='specify the problem dimensions')
 parser.add_argument('--iterations', type=int, help='specify the iterations to collect in the search')
 parser.add_argument('--bb-optimizer', type=str, help='specify the black-box optimizer to use', default='bo')
+parser.add_argument('--samples-optimizer', type=int,
+                    help='number of samples / evaluations (for bo) or max number of samples / evaluations (for turbo)',
+                    default=None)
 
 args = parser.parse_args()
 
@@ -40,6 +43,8 @@ else:
 assert f is not None
 assert args.iterations > 0
 
+if args.samples_optimizer is None:
+    args.samples_optimizer = 10000 if args.bb_optimizer == 'turbo' else 1
 # f = Ackley(dims = 10)
 # f = Levy(dims = 10)
 # f = Swimmer()
@@ -56,7 +61,8 @@ agent = MCTS(
     leaf_size=f.leaf_size,  # tree leaf size
     kernel_type=f.kernel_type,  # SVM configruation
     gamma_type=f.gamma_type,  # SVM configruation
-    solver_type=f.bb_opt
+    solver_type=f.bb_opt,
+    solver_evals=args.samples_optimizer
 )
 
 agent.search(iterations=args.iterations)

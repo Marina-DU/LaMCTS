@@ -27,7 +27,7 @@ class MCTS:
     #############################################
 
     def __init__(self, lb, ub, dims, ninits, func, Cp=1, leaf_size=20, kernel_type="rbf", gamma_type="auto",
-                 solver_type='bo'):
+                 solver_type='bo', solver_evals=1):
         self.dims = dims
         self.samples = []
         self.nodes = []
@@ -47,6 +47,7 @@ class MCTS:
         self.gamma_type = gamma_type
 
         self.solver_type = solver_type  # solver can be 'bo' or 'turbo'
+        self.solver_evals = solver_evals
 
         print("gamma_type:", gamma_type)
 
@@ -247,9 +248,9 @@ class MCTS:
             leaf, path = self.select()
             for i in range(0, 1):
                 if self.solver_type == 'bo':
-                    samples = leaf.propose_samples_bo(1, path, self.lb, self.ub, self.samples)
+                    samples = leaf.propose_samples_bo(self.solver_evals, path, self.lb, self.ub, self.samples)
                 elif self.solver_type == 'turbo':
-                    samples, values = leaf.propose_samples_turbo(100, path, self.func)
+                    samples, values = leaf.propose_samples_turbo(self.solver_evals, path, self.func)
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):

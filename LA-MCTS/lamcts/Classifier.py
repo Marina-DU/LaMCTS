@@ -347,14 +347,15 @@ class Classifier():
 
     def propose_samples_turbo(self, num_samples, path, func):
         # throw a uniform sampling in the selected partition
-        X_init = self.propose_rand_samples_sobol(30, path, func.lb, func.ub)
+        n_init = 2*func.dims
+        X_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
         # get samples around the selected partition
         print("sampled ", len(X_init), " for the initialization")
         turbo1 = Turbo1(
             f=func,  # Handle to objective function
             lb=func.lb,  # Numpy array specifying lower bounds
             ub=func.ub,  # Numpy array specifying upper bounds
-            n_init=30,  # Number of initial bounds from an Latin hypercube design
+            n_init=n_init,  # Number of initial bounds from an Latin hypercube design
             max_evals=num_samples,  # Maximum number of evaluations
             batch_size=1,  # How large batch size TuRBO uses
             verbose=True,  # Print information from each batch
