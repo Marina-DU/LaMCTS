@@ -251,10 +251,13 @@ class MCTS:
                     samples = leaf.propose_samples_bo(self.solver_evals, path, self.lb, self.ub, self.samples)
                 elif self.solver_type == 'turbo':
                     samples, values = leaf.propose_samples_turbo(self.solver_evals, path, self.func)
+                elif self.solver_type == 'de':
+                    sample = leaf.propose_sample_de(path, self.func)
+                    samples = [sample]
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):
-                    if self.solver_type == 'bo':
+                    if self.solver_type == 'bo' or self.solver_type == 'de':
                         value = self.collect_samples(samples[idx])
                     elif self.solver_type == 'turbo':
                         value = self.collect_samples(samples[idx], values[idx])

@@ -18,12 +18,14 @@ def get_dataframe(filename):
 
 
 # data_lamcts = get_dataframe('../LA-MCTS/Ackleyturbo20/result2000')
-data_lamcts_turbo = get_dataframe('arrays_visualize/result3400_ackley_turbo_20')
-data_lamcts = get_dataframe('arrays_visualize/result900_ackley_bo_20')
+# data_lamcts_turbo = get_dataframe('arrays_visualize/result3400_ackley_turbo_20')
+# data_lamcts = get_dataframe('arrays_visualize/result900_ackley_bo_20')
+data_lamcts_de = get_dataframe('arrays_visualize/result200_ackley_de_2')
 # data_bo = get_dataframe('../LA-MCTS-baselines/Bayesian-Optimization/Ackley20/result100')
 # Plotting using seaborn
-sns.lineplot(data=data_lamcts, x='variable', y='value', label='LA-MCTS (BO)')
-sns.lineplot(data=data_lamcts_turbo, x='variable', y='value', label='LA-MCTS (TuRBO)')
+# sns.lineplot(data=data_lamcts, x='variable', y='value', label='LA-MCTS (BO)')
+# sns.lineplot(data=data_lamcts_turbo, x='variable', y='value', label='LA-MCTS (TuRBO)')
+sns.lineplot(data=data_lamcts_de, x='variable', y='value', label='LA-MCTS (TuRBO)')
 # sns.lineplot(data=data_bo, x='variable', y='value', label='Bayesian Optimization', hue=1, palette=['orange'], linestyle="dashed")
 
 # Set the title and labels for the plot

@@ -8,6 +8,7 @@ import json
 import numpy as np
 import math
 import operator
+import copy
 
 
 class Node:
@@ -31,6 +32,12 @@ class Node:
         self.kids = []  # 0:good, 1:bad
 
         self.bag = []
+
+        # for DE
+        self.population = np.array([])
+        self.target_index = 0
+        self.generation = 1
+
         self.is_svm_splittable = False
 
         if reset_id:
@@ -108,11 +115,36 @@ class Node:
         else:
             return None
 
+    def check_target_index(self):
+        if self.target_index >= len(self.population):
+            print(f'node{self.id} finished generation {self.generation}')
+            self.target_index = 0
+            self.generation = self.generation + 1
+
     def get_parent_str(self):
         return self.parent.get_name()
 
     def propose_samples_bo(self, num_samples, path, lb, ub, samples):
         proposed_X = self.classifier.propose_samples_bo(num_samples, path, lb, ub, samples)
+        return proposed_X
+
+    def propose_sample_de(self, path, func):
+
+        samples = copy.deepcopy(self.bag)
+
+        if len(self.population) == 0:
+            self.population = np.array([sample[0] for sample in samples])
+
+        while len(self.population) < 4:
+            sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
+            samples.append((sample, func(sample)))
+            self.population = np.concatenate((self.population, [sample]))
+
+        self.update_bag(samples)
+
+        proposed_X, self.population, self.target_index = self.classifier.propose_sample_de(self.population, self.target_index, path, func)
+        self.check_target_index()
+
         return proposed_X
 
     def propose_samples_turbo(self, num_samples, path, func):
