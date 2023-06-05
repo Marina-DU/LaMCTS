@@ -37,6 +37,7 @@ class Node:
         self.population = np.array([])
         self.target_index = 0
         self.generation = 1
+        self.best_in_gen_idx = None
 
         self.is_svm_splittable = False
 
@@ -80,6 +81,9 @@ class Node:
         print("BAG" + "#" * 10)
         print('\n')
 
+    def get_best_idx(self):
+        return min(range(len(self.bag)), key=lambda i: self.bag[i][1])
+
     def update_bag(self, samples):
         assert len(samples) > 0
 
@@ -115,11 +119,13 @@ class Node:
         else:
             return None
 
-    def check_target_index(self):
+    def check_target_index(self, de_type='rand'):
         if self.target_index >= len(self.population):
             print(f'node{self.id} finished generation {self.generation}')
             self.target_index = 0
             self.generation = self.generation + 1
+            if de_type == 'best':
+                self.best_in_gen_idx = self.get_best_idx()
 
     def get_parent_str(self):
         return self.parent.get_name()
@@ -128,7 +134,8 @@ class Node:
         proposed_X = self.classifier.propose_samples_bo(num_samples, path, lb, ub, samples)
         return proposed_X
 
-    def propose_sample_de(self, path, func):
+    def propose_sample_de(self, path, func, de_type='rand'):
+        assert de_type in ['rand', 'best'], "de_type can only be 'rand' or 'best'"
 
         samples = copy.deepcopy(self.bag)
 
@@ -142,8 +149,19 @@ class Node:
 
         self.update_bag(samples)
 
-        proposed_X, self.population, self.target_index = self.classifier.propose_sample_de(self.population, self.target_index, path, func)
-        self.check_target_index()
+        if de_type == 'rand':
+            proposed_X, self.population, self.target_index = self.classifier.propose_sample_de(self.population,
+                                                                                               self.target_index, path,
+                                                                                               func)
+        else:
+            if self.best_in_gen_idx is None:
+                self.best_in_gen_idx = self.get_best_idx()
+            proposed_X, self.population, self.target_index = self.classifier.propose_sample_de_best(self.population,
+                                                                                                    self.target_index,
+                                                                                                    path, func,
+                                                                                                    self.best_in_gen_idx)
+
+        self.check_target_index(de_type)
 
         return proposed_X
 

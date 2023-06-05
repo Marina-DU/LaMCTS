@@ -20,6 +20,7 @@ parser.add_argument('--ninits', type=int, help='specify the number of random sam
 parser.add_argument('--cp', type=float, help='specify the Cp for MCTS')
 parser.add_argument('--leaf-size', type=int, help='specify the tree leaf size')
 parser.add_argument('--kernel-type', type=str, help='specify the kernel type')
+parser.add_argument('--de-type', type=str, help='specify type of DE regarding the mutation step', default=None)
 
 args = parser.parse_args()
 
@@ -66,7 +67,8 @@ agent = MCTS(
     kernel_type=f.kernel_type if args.kernel_type is None else args.kernel_type,  # SVM configruation
     gamma_type=f.gamma_type,  # SVM configruation
     solver_type=f.bb_opt,
-    solver_evals=args.samples_optimizer
+    solver_evals=args.samples_optimizer,
+    de_type=args.de_type
 )
 
 agent.search(iterations=args.iterations)

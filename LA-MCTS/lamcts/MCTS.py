@@ -27,7 +27,7 @@ class MCTS:
     #############################################
 
     def __init__(self, lb, ub, dims, ninits, func, Cp=1, leaf_size=20, kernel_type="rbf", gamma_type="auto",
-                 solver_type='bo', solver_evals=1):
+                 solver_type='bo', solver_evals=1, de_type=None):
         self.dims = dims
         self.samples = []
         self.nodes = []
@@ -46,8 +46,12 @@ class MCTS:
         self.kernel_type = kernel_type
         self.gamma_type = gamma_type
 
-        self.solver_type = solver_type  # solver can be 'bo' or 'turbo'
+        self.solver_type = solver_type  # solver can be 'bo' or 'turbo' or 'de'
         self.solver_evals = solver_evals
+        if de_type is None and self.solver_type == 'de':
+            self.de_type = 'rand'
+        else:
+            self.de_type = de_type
 
         print("gamma_type:", gamma_type)
 
@@ -252,7 +256,7 @@ class MCTS:
                 elif self.solver_type == 'turbo':
                     samples, values = leaf.propose_samples_turbo(self.solver_evals, path, self.func)
                 elif self.solver_type == 'de':
-                    sample = leaf.propose_sample_de(path, self.func)
+                    sample = leaf.propose_sample_de(path, self.func, self.de_type)
                     samples = [sample]
                 else:
                     raise Exception("solver not implemented")

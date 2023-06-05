@@ -354,6 +354,20 @@ class Classifier():
 
         return proposed_X, population, target_index
 
+    def propose_sample_de_best(self, population, target_index, path, func, best_idx):
+        """ Proposes the next sampling point by optimizing the acquisition function.
+        Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
+        Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
+        Returns: Location of the acquisition function maximum. """
+        assert path is not None and len(path) >= 0
+
+        proposed_X, population = de_simple.de_best_reproduction_sampling(population, target_index, func, func.lb,
+                                                                         func.ub, best_idx)
+
+        target_index = target_index + 1
+
+        return proposed_X, population, target_index
+
     ###########################
     # sampling with turbo
     ###########################
