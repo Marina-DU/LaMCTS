@@ -9,6 +9,8 @@ import numpy as np
 import math
 import operator
 import copy
+from random import sample as random_sample
+from diffevo import de_simple
 
 
 class Node:
@@ -35,6 +37,7 @@ class Node:
 
         # for DE
         self.population = np.array([])
+        self.population_ev = np.array([])
         self.target_index = 0
         self.generation = 1
         self.best_in_gen_idx = None
@@ -83,6 +86,9 @@ class Node:
 
     def get_best_idx(self):
         return min(range(len(self.bag)), key=lambda i: self.bag[i][1])
+
+    def get_best_from_current_population(self):
+        return self.population[min(enumerate(self.population_ev), key=lambda x: x[1])[0]]
 
     def update_bag(self, samples):
         assert len(samples) > 0
@@ -134,36 +140,30 @@ class Node:
         proposed_X = self.classifier.propose_samples_bo(num_samples, path, lb, ub, samples)
         return proposed_X
 
-    def propose_sample_de(self, path, func, de_type='rand'):
+    def propose_sample_de(self, path, func, num_samples=1, de_type='rand'):
         assert de_type in ['rand', 'best'], "de_type can only be 'rand' or 'best'"
 
         samples = copy.deepcopy(self.bag)
 
         if len(self.population) == 0:
             self.population = np.array([sample[0] for sample in samples])
+            self.population_ev = np.array([sample[1] for sample in samples])
 
         while len(self.population) < 4:
             sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
-            samples.append((sample, func(sample)))
+            sample_ev = func(sample)
+            samples.append((sample, sample_ev))
             self.population = np.concatenate((self.population, [sample]))
+            self.population_ev = np.concatenate((self.population_ev, [sample_ev]))
 
         self.update_bag(samples)
 
         if de_type == 'rand':
-            proposed_X, self.population, self.target_index = self.classifier.propose_sample_de(self.population,
-                                                                                               self.target_index, path,
-                                                                                               func)
+            proposed_X, fX = self.de_reproduction_sampling(func, num_samples=num_samples)
         else:
-            if self.best_in_gen_idx is None:
-                self.best_in_gen_idx = self.get_best_idx()
-            proposed_X, self.population, self.target_index = self.classifier.propose_sample_de_best(self.population,
-                                                                                                    self.target_index,
-                                                                                                    path, func,
-                                                                                                    self.best_in_gen_idx)
+            proposed_X, fX = self.de_reproduction_sampling_best(func, num_samples=num_samples)
 
-        self.check_target_index(de_type)
-
-        return proposed_X
+        return proposed_X, fX
 
     def propose_samples_turbo(self, num_samples, path, func):
         proposed_X, fX = self.classifier.propose_samples_turbo(num_samples, path, func)
@@ -239,6 +239,104 @@ class Node:
         net_str = np.random.choice(list(self.bag.keys()))
         del self.bag[net_str]
         return json.loads(net_str)
+
+    def de_reproduction_sampling(self, func, num_samples=1, mutation_factor=0.8, recombination_prob=0.9):
+        popsize = self.population.shape[0]
+
+        assert self.target_index in list(range(popsize))
+
+        trial_vectors = []
+        trial_evals = []
+
+        for i in range(num_samples):
+
+            # --- MUTATION (step #3.A) ---------------------+
+            candidates = list(range(popsize))
+            candidates.remove(self.target_index)
+            random_index = random_sample(candidates, 3)
+
+            x_1 = self.population[random_index[0]]
+            x_2 = self.population[random_index[1]]
+            x_3 = self.population[random_index[2]]
+            x_t = self.population[self.target_index]  # target individual
+
+            # subtract x3 from x2, and create a new vector (x_diff)
+            x_diff = x_2 - x_3
+            # multiply x_diff by the mutation factor (F) and add to x_1
+            v_donor = x_1 + mutation_factor * x_diff
+            v_donor = de_simple.ensure_bounds(v_donor, func.lb, func.ub)
+
+            # --- RECOMBINATION (step #3.B) ----------------+
+
+            v_trial = np.where(np.random.random(x_t.shape) <= recombination_prob, v_donor, x_t)
+
+            # --- GREEDY SELECTION (step #3.C) -------------+
+
+            score_trial = func(v_trial)
+            score_target = self.population_ev[self.target_index]
+
+            if score_trial < score_target:
+                self.population[self.target_index] = v_trial
+                print('   >', score_trial, v_trial)
+            else:
+                print('   >', score_target, x_t)
+
+            trial_vectors.append(v_trial)
+            trial_evals.append(score_trial)
+
+            self.target_index = self.target_index + 1
+            self.check_target_index()
+
+        return trial_vectors, trial_evals
+
+    def de_reproduction_sampling_best(self, func, num_samples=1, mutation_factor=0.8, recombination_prob=0.9):
+        popsize = self.population.shape[0]
+
+        assert self.target_index in list(range(popsize))
+
+        trial_vectors = []
+        trial_evals = []
+
+        for i in range(num_samples):
+
+            # --- MUTATION (step #3.A) ---------------------+
+            candidates = list(range(popsize))
+            candidates.remove(self.target_index)
+            random_index = random_sample(candidates, 2)
+
+            x_1 = self.get_best_from_current_population()
+            x_2 = self.population[random_index[0]]
+            x_3 = self.population[random_index[1]]
+            x_t = self.population[self.target_index]  # target individual
+
+            # subtract x3 from x2, and create a new vector (x_diff)
+            x_diff = x_2 - x_3
+            # multiply x_diff by the mutation factor (F) and add to x_1
+            v_donor = x_1 + mutation_factor * x_diff
+            v_donor = de_simple.ensure_bounds(v_donor, func.lb, func.ub)
+
+            # --- RECOMBINATION (step #3.B) ----------------+
+
+            v_trial = np.where(np.random.random(x_t.shape) <= recombination_prob, v_donor, x_t)
+
+            # --- GREEDY SELECTION (step #3.C) -------------+
+
+            score_trial = func(v_trial)
+            score_target = self.population_ev[self.target_index]
+
+            if score_trial < score_target:
+                self.population[self.target_index] = v_trial
+                print('   >', score_trial, v_trial)
+            else:
+                print('   >', score_target, x_t)
+
+            trial_vectors.append(v_trial)
+            trial_evals.append(score_trial)
+
+            self.target_index = self.target_index + 1
+            self.check_target_index()
+
+        return trial_vectors, trial_evals
 
 # print(root)
 #
