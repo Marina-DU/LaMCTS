@@ -39,7 +39,7 @@ class tracker:
 
 
 class Levy:
-    def __init__(self, dims=10, bb_opt='bo'):
+    def __init__(self, dims=10, bb_opt=''):
         self.dims = dims
         self.lb = -10 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
@@ -81,7 +81,7 @@ class Levy:
 
 
 class Ackley:
-    def __init__(self, dims=10, bb_opt='bo'):
+    def __init__(self, dims=10, bb_opt=''):
         self.dims = dims
         self.lb = -5 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
@@ -109,7 +109,7 @@ class Ackley:
 
 
 class Rosenbrock:
-    def __init__(self, dims=10, bb_opt='bo'):
+    def __init__(self, dims=10, bb_opt=''):
         self.dims = dims
         self.lb = -10 * np.ones(dims)
         self.ub = 10 * np.ones(dims)

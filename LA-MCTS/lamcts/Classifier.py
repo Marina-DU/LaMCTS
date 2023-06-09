@@ -22,6 +22,7 @@ from matplotlib import cm
 
 from turbo_1.turbo_1 import Turbo1
 from diffevo import de_simple
+from pso import particle
 
 
 # the input will be samples!
@@ -341,32 +342,32 @@ class Classifier():
         proposed_X = X[indices]
         return proposed_X
 
-    # def propose_sample_de(self, population, target_index, path, func):
-    #     """ Proposes the next sampling point by optimizing the acquisition function.
-    #     Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
-    #     Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
-    #     Returns: Location of the acquisition function maximum. """
-    #     assert path is not None and len(path) >= 0
-    #
-    #     proposed_X, population = de_simple.de_reproduction_sampling(population, target_index, func, func.lb, func.ub)
-    #
-    #     target_index = target_index + 1
-    #
-    #     return proposed_X, population, target_index
-    #
-    # def propose_sample_de_best(self, population, target_index, path, func, best_idx):
-    #     """ Proposes the next sampling point by optimizing the acquisition function.
-    #     Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
-    #     Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
-    #     Returns: Location of the acquisition function maximum. """
-    #     assert path is not None and len(path) >= 0
-    #
-    #     proposed_X, population = de_simple.de_best_reproduction_sampling(population, target_index, func, func.lb,
-    #                                                                      func.ub, best_idx)
-    #
-    #     target_index = target_index + 1
-    #
-    #     return proposed_X, population, target_index
+    def propose_sample_de(self, func, path, num_samples):
+        """ Proposes the next sampling point by optimizing the acquisition function.
+        Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
+        Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
+        Returns: Location of the acquisition function maximum. """
+        assert path is not None and len(path) >= 0
+
+        n_init = 30
+        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
+
+        proposed_X, population = de_simple.de_reproduction_sampling(x_init, func, func.lb, func.ub, num_samples)
+
+
+        return proposed_X, population
+
+    def propose_sample_de_best(self, func, path, num_samples):
+        """ Proposes the next sampling point by optimizing the acquisition function.
+        Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
+        Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
+        Returns: Location of the acquisition function maximum. """
+        n_init = 30
+        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
+
+        proposed_X, population = de_simple.de_best_reproduction_sampling(x_init, func, func.lb, func.ub, num_samples)
+
+        return proposed_X, population
 
     ###########################
     # sampling with turbo
@@ -401,6 +402,12 @@ class Classifier():
 
         return proposed_X, fX
 
+    def propose_samples_pso(self, num_samples, path, func):
+        n_init = 30
+        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
+        proposed_x, fx = particle.pso_sampling(func, x_init, num_samples, max_iterations=100)
+        fx = fx * -1
+        return proposed_x, fx
     ###########################
     # random sampling
     ###########################

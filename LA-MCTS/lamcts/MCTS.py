@@ -27,7 +27,7 @@ class MCTS:
     #############################################
 
     def __init__(self, lb, ub, dims, ninits, func, Cp=1, leaf_size=20, kernel_type="rbf", gamma_type="auto",
-                 solver_type='bo', solver_evals=1, de_type=None):
+                 solver_type='bo', solver_evals=None, de_type=None):
         self.dims = dims
         self.samples = []
         self.nodes = []
@@ -47,6 +47,11 @@ class MCTS:
         self.gamma_type = gamma_type
 
         self.solver_type = solver_type  # solver can be 'bo' or 'turbo' or 'de'
+        if solver_evals is None:
+            if solver_type == 'turbo':
+                solver_evals = 10000
+            else:
+                solver_evals = 1
         self.solver_evals = solver_evals
         if de_type is None and self.solver_type == 'de':
             self.de_type = 'rand'
@@ -257,12 +262,14 @@ class MCTS:
                     samples, values = leaf.propose_samples_turbo(self.solver_evals, path, self.func)
                 elif self.solver_type == 'de':
                     samples, values = leaf.propose_sample_de(path, self.func, self.solver_evals, self.de_type)
+                elif self.solver_type == 'pso':
+                    samples, values = leaf.propose_samples_pso(self.solver_evals, path, self.func)
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):
                     if self.solver_type == 'bo' :
                         value = self.collect_samples(samples[idx])
-                    elif self.solver_type == 'turbo' or self.solver_type == 'de':
+                    elif self.solver_type == 'turbo' or self.solver_type == 'de' or self.solver_type == 'pso':
                         value = self.collect_samples(samples[idx], values[idx])
                     else:
                         raise Exception("solver not implemented")

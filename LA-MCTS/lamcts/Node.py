@@ -11,6 +11,7 @@ import operator
 import copy
 from random import sample as random_sample
 from diffevo import de_simple
+from pso import particle as pso
 
 
 class Node:
@@ -41,6 +42,11 @@ class Node:
         self.target_index = 0
         self.generation = 1
         self.best_in_gen_idx = None
+
+        # # for PSO
+        # self.particles = []
+        # self.global_best_fitness = float('inf')
+        # self.global_best_position = None
 
         self.is_svm_splittable = False
 
@@ -159,15 +165,23 @@ class Node:
         self.update_bag(samples)
 
         if de_type == 'rand':
-            proposed_X, fX = self.de_reproduction_sampling(func, num_samples=num_samples)
+            # proposed_X, fX = self.de_reproduction_sampling(func, num_samples=num_samples)
+            proposed_X, fX = self.classifier.propose_sample_de(func, path, num_samples)
         else:
-            proposed_X, fX = self.de_reproduction_sampling_best(func, num_samples=num_samples)
-
+            # proposed_X, fX = self.de_reproduction_sampling_best(func, num_samples=num_samples)
+            proposed_X, fX = self.classifier.propose_sample_de_best(func, path, num_samples)
+        fX = fX * -1
         return proposed_X, fX
 
     def propose_samples_turbo(self, num_samples, path, func):
         proposed_X, fX = self.classifier.propose_samples_turbo(num_samples, path, func)
         return proposed_X, fX
+
+    def propose_samples_pso(self, num_samples, path, func):
+        proposed_x, fx = self.classifier.propose_samples_pso(num_samples, path, func)
+        # proposed_x, fx = self.pso_sampling(func, path)
+        # fx = fx * -1
+        return proposed_x, fx
 
     def propose_samples_rand(self, num_samples):
         assert num_samples > 0
@@ -240,54 +254,54 @@ class Node:
         del self.bag[net_str]
         return json.loads(net_str)
 
-    def de_reproduction_sampling(self, func, num_samples=1, mutation_factor=0.8, recombination_prob=0.9):
-        popsize = self.population.shape[0]
-
-        assert self.target_index in list(range(popsize))
-
-        trial_vectors = []
-        trial_evals = []
-
-        for i in range(num_samples):
-
-            # --- MUTATION (step #3.A) ---------------------+
-            candidates = list(range(popsize))
-            candidates.remove(self.target_index)
-            random_index = random_sample(candidates, 3)
-
-            x_1 = self.population[random_index[0]]
-            x_2 = self.population[random_index[1]]
-            x_3 = self.population[random_index[2]]
-            x_t = self.population[self.target_index]  # target individual
-
-            # subtract x3 from x2, and create a new vector (x_diff)
-            x_diff = x_2 - x_3
-            # multiply x_diff by the mutation factor (F) and add to x_1
-            v_donor = x_1 + mutation_factor * x_diff
-            v_donor = de_simple.ensure_bounds(v_donor, func.lb, func.ub)
-
-            # --- RECOMBINATION (step #3.B) ----------------+
-
-            v_trial = np.where(np.random.random(x_t.shape) <= recombination_prob, v_donor, x_t)
-
-            # --- GREEDY SELECTION (step #3.C) -------------+
-
-            score_trial = func(v_trial)
-            score_target = self.population_ev[self.target_index]
-
-            if score_trial < score_target:
-                self.population[self.target_index] = v_trial
-                print('   >', score_trial, v_trial)
-            else:
-                print('   >', score_target, x_t)
-
-            trial_vectors.append(v_trial)
-            trial_evals.append(score_trial)
-
-            self.target_index = self.target_index + 1
-            self.check_target_index()
-
-        return trial_vectors, trial_evals
+    # def de_reproduction_sampling(self, func, num_samples=1, mutation_factor=0.8, recombination_prob=0.9):
+    #     popsize = self.population.shape[0]
+    #
+    #     assert self.target_index in list(range(popsize))
+    #
+    #     trial_vectors = []
+    #     trial_evals = []
+    #
+    #     for i in range(num_samples):
+    #
+    #         # --- MUTATION (step #3.A) ---------------------+
+    #         candidates = list(range(popsize))
+    #         candidates.remove(self.target_index)
+    #         random_index = random_sample(candidates, 3)
+    #
+    #         x_1 = self.population[random_index[0]]
+    #         x_2 = self.population[random_index[1]]
+    #         x_3 = self.population[random_index[2]]
+    #         x_t = self.population[self.target_index]  # target individual
+    #
+    #         # subtract x3 from x2, and create a new vector (x_diff)
+    #         x_diff = x_2 - x_3
+    #         # multiply x_diff by the mutation factor (F) and add to x_1
+    #         v_donor = x_1 + mutation_factor * x_diff
+    #         v_donor = de_simple.ensure_bounds(v_donor, func.lb, func.ub)
+    #
+    #         # --- RECOMBINATION (step #3.B) ----------------+
+    #
+    #         v_trial = np.where(np.random.random(x_t.shape) <= recombination_prob, v_donor, x_t)
+    #
+    #         # --- GREEDY SELECTION (step #3.C) -------------+
+    #
+    #         score_trial = func(v_trial)
+    #         score_target = self.population_ev[self.target_index]
+    #
+    #         if score_trial < score_target:
+    #             self.population[self.target_index] = v_trial
+    #             print('   >', score_trial, v_trial)
+    #         else:
+    #             print('   >', score_target, x_t)
+    #
+    #         trial_vectors.append(v_trial)
+    #         trial_evals.append(score_trial)
+    #
+    #         self.target_index = self.target_index + 1
+    #         self.check_target_index()
+    #
+    #     return np.array(trial_vectors), np.array(trial_evals)
 
     def de_reproduction_sampling_best(self, func, num_samples=1, mutation_factor=0.8, recombination_prob=0.9):
         popsize = self.population.shape[0]
@@ -326,6 +340,7 @@ class Node:
 
             if score_trial < score_target:
                 self.population[self.target_index] = v_trial
+                self.population[self.target_index] = score_trial
                 print('   >', score_trial, v_trial)
             else:
                 print('   >', score_target, x_t)
@@ -338,6 +353,50 @@ class Node:
 
         return trial_vectors, trial_evals
 
+    # def pso_sampling(self, func, path, num_iterations=10, inertia_weight=0.5, cognitive_weight=0.5,
+    #                  social_weight=0.5):
+    #
+    #     n_init = 30
+    #
+    #     if len(self.particles) == 0:
+    #         print("POPULATING PARTICLES")
+    #         samples = copy.deepcopy(self.bag)
+    #         n_bag = len(samples)
+    #         if n_bag > n_init:
+    #             samples = sorted(samples, key=lambda x: x[1])[:n_init]
+    #         elif n_bag < n_init:
+    #             n_add = n_init - n_bag
+    #             x_add = self.classifier.propose_rand_samples_sobol(n_add, path, func.lb, func.ub)
+    #             x_fx_add = [(x, func(x)*-1) for x in x_add]
+    #             samples = samples + x_fx_add
+    #
+    #         print('len(self.bag)', len(self.bag))
+    #         for sample in samples:
+    #             self.particles.append(pso.Particle(func, sample[0], sample[1] * -1))
+    #             if sample[1] * -1 < self.global_best_fitness:
+    #                 self.global_best_fitness = sample[1] * -1
+    #                 self.global_best_position = sample[0]
+    #
+    #     samples = []
+    #     sample_evals = []
+    #
+    #     for _ in range(num_iterations):
+    #         print("self.global_best_fitness", self.global_best_fitness)
+    #
+    #         for particle in self.particles:
+    #             particle.update_velocity(self.global_best_position, inertia_weight, cognitive_weight, social_weight)
+    #             particle.update_position()
+    #
+    #         for particle in self.particles:
+    #             particle.evaluate_fitness()
+    #             if particle.best_fitness < self.global_best_fitness:
+    #                 self.global_best_fitness = particle.best_fitness
+    #                 self.global_best_position = particle.best_position.copy()
+    #                 print("best fitness: ", self.global_best_fitness)
+    #                 samples.append(particle.position)
+    #                 sample_evals.append(particle.current_fitness)
+    #
+    #     return np.array(samples), np.array(sample_evals)
 # print(root)
 #
 # with open('features.json', 'r') as infile:
