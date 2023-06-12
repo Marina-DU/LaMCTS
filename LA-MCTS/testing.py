@@ -2,7 +2,7 @@ from lamcts import MCTS
 from functions.functions import *
 #
 # f = Levy(dims=2, bb_opt='de')
-f = Rosenbrock(dims=2, bb_opt='de')
+f = Rosenbrock(dims=2, complement='de')
 # f = Ackley(dims=2, bb_opt='de')
 
 agent = MCTS(

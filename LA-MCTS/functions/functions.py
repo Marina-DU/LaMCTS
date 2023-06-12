@@ -39,12 +39,12 @@ class tracker:
 
 
 class Levy:
-    def __init__(self, dims=10, bb_opt=''):
+    def __init__(self, dims=10, complement=''):
         self.dims = dims
         self.lb = -10 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
-        self.bb_opt = bb_opt
-        self.tracker = tracker('Levy' + str(self.bb_opt) + str(dims))
+        self.complement = complement
+        self.tracker = tracker('Levy' + str(self.complement) + str(dims))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
@@ -81,13 +81,13 @@ class Levy:
 
 
 class Ackley:
-    def __init__(self, dims=10, bb_opt=''):
+    def __init__(self, dims=10, complement=''):
         self.dims = dims
         self.lb = -5 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
         self.counter = 0
-        self.bb_opt = bb_opt
-        self.tracker = tracker('Ackley' + str(self.bb_opt) + str(dims))
+        self.complement = complement
+        self.tracker = tracker('Ackley' + str(self.complement) + str(dims))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 1
@@ -109,13 +109,13 @@ class Ackley:
 
 
 class Rosenbrock:
-    def __init__(self, dims=10, bb_opt=''):
+    def __init__(self, dims=10, complement=''):
         self.dims = dims
         self.lb = -10 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
         self.counter = 0
-        self.bb_opt = bb_opt
-        self.tracker = tracker('Rosenbrock' + str(self.bb_opt) + str(dims))
+        self.complement = complement
+        self.tracker = tracker('Rosenbrock' + str(self.complement) + str(dims))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10

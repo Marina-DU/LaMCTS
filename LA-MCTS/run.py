@@ -14,7 +14,7 @@ parser.add_argument('--dims', type=int, help='specify the problem dimensions')
 parser.add_argument('--iterations', type=int, help='specify the iterations to collect in the search')
 parser.add_argument('--bb-optimizer', type=str, help='specify the black-box optimizer to use', default='bo')
 parser.add_argument('--samples-optimizer', type=int,
-                    help='number of samples/evaluations (for bo and de) or max number of samples/evaluations (for turbo)',
+                    help='number of samples/evaluations (for bo, de, and pso) or max number of samples/evaluations (for turbo)',
                     default=None)
 parser.add_argument('--ninits', type=int, help='specify the number of random samples used in initializations')
 parser.add_argument('--cp', type=float, help='specify the Cp for MCTS')
@@ -24,17 +24,26 @@ parser.add_argument('--de-type', type=str, help='specify type of DE regarding th
 
 args = parser.parse_args()
 
+if args.samples_optimizer is None:
+    args.samples_optimizer = 10000 if args.bb_optimizer == 'turbo' else 1
+
+if args.bb_optimizer == 'de' and args.de_type is None:
+    args.de_type = 'rand'
+
+complement = args.bb_optimizer + '_' + args.de_type if args.de_type is not None else '' + '_' + str(
+    args.samples_optimizer) + 'samples' if args.de_type != 'turbo' else 'max_samples'
+
 f = None
 iteration = 0
 if args.func == 'ackley':
     assert args.dims > 0
-    f = Ackley(dims=args.dims, bb_opt=args.bb_optimizer)
+    f = Ackley(dims=args.dims, complement=complement)
 elif args.func == 'levy':
     assert args.dims > 0
-    f = Levy(dims=args.dims, bb_opt=args.bb_optimizer)
+    f = Levy(dims=args.dims, complement=complement)
 elif args.func == 'rosenbrock':
     assert args.dims > 0
-    f = Rosenbrock(dims=args.dims, bb_opt=args.bb_optimizer)
+    f = Rosenbrock(dims=args.dims, complement=complement)
 elif args.func == 'lunar':
     f = Lunarlanding()
 elif args.func == 'swimmer':
@@ -48,8 +57,6 @@ else:
 assert f is not None
 assert args.iterations > 0
 
-if args.samples_optimizer is None:
-    args.samples_optimizer = 10000 if args.bb_optimizer == 'turbo' else 1
 # f = Ackley(dims = 10)
 # f = Levy(dims = 10)
 # f = Swimmer()
@@ -66,7 +73,7 @@ agent = MCTS(
     leaf_size=f.leaf_size if args.leaf_size is None else args.leaf_size,  # tree leaf size
     kernel_type=f.kernel_type if args.kernel_type is None else args.kernel_type,  # SVM configruation
     gamma_type=f.gamma_type,  # SVM configruation
-    solver_type=f.bb_opt,
+    solver_type=args.bb_optimizer,
     solver_evals=args.samples_optimizer,
     de_type=args.de_type
 )
