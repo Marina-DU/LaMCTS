@@ -141,14 +141,15 @@ class Rosenbrock:
 
 
 class circadianClock:
-    def __init__(self, complement=''):
+    def __init__(self, complement='', score_criterium = 3):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
         self.leaf_size = 10
-        self.kernel_type = "rbf"
+        self.kernel_type = "poly"
         self.ninits = 40
         self.gamma_type = "auto"
         self.complement = complement
+        self.score_criterium = score_criterium
 
         # 1. Parse the SMB file that contains specifications about the biological interaction graph
         self.variables, _, self.initialHybridState, _, self.BK = utils.parse('circadian_clock', False)
@@ -168,7 +169,7 @@ class circadianClock:
 
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK)[0]
+        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x
@@ -180,14 +181,15 @@ class circadianClock:
 
 
 class cellCycleBehaegel:
-    def __init__(self, complement=''):
+    def __init__(self, complement='', score_criterium = 3):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
         self.leaf_size = 10
-        self.kernel_type = "rbf"
+        self.kernel_type = "poly"
         self.ninits = 40
         self.gamma_type = "auto"
         self.complement = complement
+        self.score_criterium = score_criterium
 
         # 1. Parse the SMB file that contains specifications about the biological interaction graph
         self.variables, _, self.initialHybridState, _, self.BK = utils.parse('cell_cycle_behaegel', False)
@@ -207,7 +209,7 @@ class cellCycleBehaegel:
 
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK)[0]
+        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x
@@ -219,14 +221,15 @@ class cellCycleBehaegel:
 
 
 class testHgrn:
-    def __init__(self, complement=''):
+    def __init__(self, complement='', score_criterium = 3):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
         self.leaf_size = 10
-        self.kernel_type = "rbf"
+        self.kernel_type = "poly"
         self.ninits = 40
         self.gamma_type = "auto"
         self.complement = complement
+        self.score_criterium = score_criterium
 
         # 1. Parse the SMB file that contains specifications about the biological interaction graph
         self.variables, _, self.initialHybridState, _, self.BK = utils.parse('test', False)
@@ -246,7 +249,7 @@ class testHgrn:
 
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK)[0]
+        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x

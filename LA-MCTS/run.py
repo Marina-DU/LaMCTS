@@ -21,6 +21,8 @@ parser.add_argument('--cp', type=float, help='specify the Cp for MCTS')
 parser.add_argument('--leaf-size', type=int, help='specify the tree leaf size')
 parser.add_argument('--kernel-type', type=str, help='specify the kernel type')
 parser.add_argument('--de-type', type=str, help='specify type of DE regarding the mutation step', default=None)
+parser.add_argument('--hgrn-criterium', type=int, help='scoring criterium for hgrn functions', choices=[3, 4],
+                    default=None)
 
 args = parser.parse_args()
 
@@ -30,9 +32,12 @@ if args.samples_optimizer is None:
 if args.bb_optimizer == 'de' and args.de_type is None:
     args.de_type = 'rand'
 
-complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + str(
-    args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples')
+if args.hgrn_criterium is None and args.func in ["circadianClock", "cellCycle", "testHgrn"]:
+    args.hgrn_criterium = 3
 
+complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + \
+             str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples') + \
+             ('_crit' + str(args.hgrn_criterium) if args.hgrn_criterium is not None else '')
 
 f = None
 iteration = 0
