@@ -1,9 +1,13 @@
 from lamcts import MCTS
 from functions.functions import *
+
 #
 # f = Levy(dims=2, bb_opt='de')
-f = Rosenbrock(dims=2, complement='de')
-# f = Ackley(dims=2, bb_opt='de')
+# f = Rosenbrock(dims=2, complement='de')
+# f = Ackley(dims=2, complement='bo')
+# f = circadianClock()
+# f = cellCycleBehaegel()
+f = testHgrn()
 
 agent = MCTS(
     lb=f.lb,  # the lower bound of each problem dimensions
@@ -15,8 +19,8 @@ agent = MCTS(
     leaf_size=f.leaf_size,  # tree leaf size
     kernel_type=f.kernel_type,  # SVM configruation
     gamma_type=f.gamma_type,  # SVM configruation
-    solver_type=f.bb_opt,
-    de_type='best',
+    solver_type='bo',
+    # de_type='best',
     solver_evals=1
 )
 

@@ -3,12 +3,14 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # 
-import numpy as np
 import gym
 import json
 import os
 
-import imageio
+import utils.utils as utils
+import numpy as np
+from simulator.simulator import Simulator
+from eval.eval import f_objective
 
 
 class tracker:
@@ -44,7 +46,7 @@ class Levy:
         self.lb = -10 * np.ones(dims)
         self.ub = 10 * np.ones(dims)
         self.complement = complement
-        self.tracker = tracker('Levy' + str(self.complement) + str(dims))
+        self.tracker = tracker('Levy' + str(dims) + str(self.complement))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
@@ -87,7 +89,7 @@ class Ackley:
         self.ub = 10 * np.ones(dims)
         self.counter = 0
         self.complement = complement
-        self.tracker = tracker('Ackley' + str(self.complement) + str(dims))
+        self.tracker = tracker('Ackley' + str(dims) + str(self.complement))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 1
@@ -115,7 +117,7 @@ class Rosenbrock:
         self.ub = 10 * np.ones(dims)
         self.counter = 0
         self.complement = complement
-        self.tracker = tracker('Rosenbrock' + str(self.complement) + str(dims))
+        self.tracker = tracker('Rosenbrock' + str(dims) + str(self.complement))
 
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
@@ -135,6 +137,123 @@ class Rosenbrock:
         # result = -1 * result
         self.tracker.track(result)
 
+        return result
+
+
+class circadianClock:
+    def __init__(self, complement=''):
+        # tunable hyper-parameters in LA-MCTS
+        self.Cp = 10
+        self.leaf_size = 10
+        self.kernel_type = "rbf"
+        self.ninits = 40
+        self.gamma_type = "auto"
+        self.complement = complement
+
+        # 1. Parse the SMB file that contains specifications about the biological interaction graph
+        self.variables, _, self.initialHybridState, _, self.BK = utils.parse('circadian_clock', False)
+
+        # 2. Set up the simulator
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+
+        self.celerities = self.simulator.getAllCelerities()
+        self.dims = len(self.celerities)  # problem dimensions
+        self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
+        self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
+        self.tracker = tracker('circadianClock' + str(self.complement))  # defined in functions.py
+
+    def objective_function(self, x):
+        for i in range(self.dims):
+            self.celerities[i].setValue(x[i])
+
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+        self.simulator.simulation(self.celerities)
+        return f_objective(x, self.simulator, self.BK)[0]
+
+    def __call__(self, x):
+        # some sanity check of x
+        assert len(x) == self.dims
+
+        result = self.objective_function(x)
+        self.tracker.track(result)
+        return result
+
+
+class cellCycleBehaegel:
+    def __init__(self, complement=''):
+        # tunable hyper-parameters in LA-MCTS
+        self.Cp = 10
+        self.leaf_size = 10
+        self.kernel_type = "rbf"
+        self.ninits = 40
+        self.gamma_type = "auto"
+        self.complement = complement
+
+        # 1. Parse the SMB file that contains specifications about the biological interaction graph
+        self.variables, _, self.initialHybridState, _, self.BK = utils.parse('cell_cycle_behaegel', False)
+
+        # 2. Set up the simulator
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+
+        self.celerities = self.simulator.getAllCelerities()
+        self.dims = len(self.celerities)  # problem dimensions
+        self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
+        self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
+        self.tracker = tracker('cellCycleBehaegel' + str(self.complement))  # defined in functions.py
+
+    def objective_function(self, x):
+        for i in range(self.dims):
+            self.celerities[i].setValue(x[i])
+
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+        self.simulator.simulation(self.celerities)
+        return f_objective(x, self.simulator, self.BK)[0]
+
+    def __call__(self, x):
+        # some sanity check of x
+        assert len(x) == self.dims
+
+        result = self.objective_function(x)
+        self.tracker.track(result)
+        return result
+
+
+class testHgrn:
+    def __init__(self, complement=''):
+        # tunable hyper-parameters in LA-MCTS
+        self.Cp = 10
+        self.leaf_size = 10
+        self.kernel_type = "rbf"
+        self.ninits = 40
+        self.gamma_type = "auto"
+        self.complement = complement
+
+        # 1. Parse the SMB file that contains specifications about the biological interaction graph
+        self.variables, _, self.initialHybridState, _, self.BK = utils.parse('test', False)
+
+        # 2. Set up the simulator
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+
+        self.celerities = self.simulator.getAllCelerities()
+        self.dims = len(self.celerities)  # problem dimensions
+        self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
+        self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
+        self.tracker = tracker('testHgrn' + str(self.complement))  # defined in functions.py
+
+    def objective_function(self, x):
+        for i in range(self.dims):
+            self.celerities[i].setValue(x[i])
+
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+        self.simulator.simulation(self.celerities)
+        return f_objective(x, self.simulator, self.BK)[0]
+
+    def __call__(self, x):
+        # some sanity check of x
+        assert len(x) == self.dims
+
+        result = self.objective_function(x)
+        self.tracker.track(result)
         return result
 
 

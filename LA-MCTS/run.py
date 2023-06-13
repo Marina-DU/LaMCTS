@@ -30,8 +30,9 @@ if args.samples_optimizer is None:
 if args.bb_optimizer == 'de' and args.de_type is None:
     args.de_type = 'rand'
 
-complement = args.bb_optimizer + '_' + args.de_type if args.de_type is not None else '' + '_' + str(
-    args.samples_optimizer) + 'samples' if args.de_type != 'turbo' else 'max_samples'
+complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + str(
+    args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples')
+
 
 f = None
 iteration = 0
@@ -50,6 +51,12 @@ elif args.func == 'swimmer':
     f = Swimmer()
 elif args.func == 'hopper':
     f = Hopper()
+elif args.func == 'circadianClock':
+    f = circadianClock(complement=complement)
+elif args.func == 'cellCycle':
+    f = cellCycleBehaegel(complement=complement)
+elif args.func == 'testHgrn':
+    f = testHgrn(complement=complement)
 else:
     print('function not defined')
     os._exit(1)
