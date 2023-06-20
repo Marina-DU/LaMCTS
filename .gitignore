@@ -1,7 +1,7 @@
 # general
 
 __pycache__/
-
+.ipynb_checkpoints
 
 
 # 'results' folders 

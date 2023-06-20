@@ -122,7 +122,7 @@ class Rosenbrock:
         # tunable hyper-parameters in LA-MCTS
         self.Cp = 10
         self.leaf_size = 10
-        self.kernel_type = "rbf"
+        self.kernel_type = "poly"
         self.ninits = 40
         self.gamma_type = "auto"
         print("initialize rosenbrock at dims:", self.dims)
@@ -199,8 +199,8 @@ class cellCycleBehaegel:
 
         self.celerities = self.simulator.getAllCelerities()
         self.dims = len(self.celerities)  # problem dimensions
-        self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
-        self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
+        self.lb = np.ones(self.dims) * -7  # lower bound for each dimensions
+        self.ub = np.ones(self.dims) * 7  # upper bound for each dimensions
         self.tracker = tracker('cellCycleBehaegel' + str(self.complement))  # defined in functions.py
 
     def objective_function(self, x):

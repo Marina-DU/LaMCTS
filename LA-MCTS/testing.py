@@ -8,23 +8,24 @@ from functions.functions import *
 # f = circadianClock()
 # f = cellCycleBehaegel()
 f = testHgrn()
+print(f.dims)
 
-agent = MCTS(
-    lb=f.lb,  # the lower bound of each problem dimensions
-    ub=f.ub,  # the upper bound of each problem dimensions
-    dims=f.dims,  # the problem dimensions
-    ninits=f.ninits,  # the number of random samples used in initializations
-    func=f,  # function object to be optimized
-    Cp=f.Cp,  # Cp for MCTS
-    leaf_size=f.leaf_size,  # tree leaf size
-    kernel_type=f.kernel_type,  # SVM configruation
-    gamma_type=f.gamma_type,  # SVM configruation
-    solver_type='bo',
-    # de_type='best',
-    solver_evals=1
-)
-
-agent.search(iterations=100)
+# agent = MCTS(
+#     lb=f.lb,  # the lower bound of each problem dimensions
+#     ub=f.ub,  # the upper bound of each problem dimensions
+#     dims=f.dims,  # the problem dimensions
+#     ninits=f.ninits,  # the number of random samples used in initializations
+#     func=f,  # function object to be optimized
+#     Cp=f.Cp,  # Cp for MCTS
+#     leaf_size=f.leaf_size,  # tree leaf size
+#     kernel_type=f.kernel_type,  # SVM configruation
+#     gamma_type=f.gamma_type,  # SVM configruation
+#     solver_type='bo',
+#     # de_type='best',
+#     solver_evals=1
+# )
+#
+# agent.search(iterations=100)
 
 # from diffevo import de_simple
 # from diffevo.cost_functions import sphere
