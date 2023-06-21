@@ -141,12 +141,12 @@ class Rosenbrock:
 
 
 class circadianClock:
-    def __init__(self, complement='', score_criterium = 3):
+    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
         # tunable hyper-parameters in LA-MCTS
-        self.Cp = 10
-        self.leaf_size = 10
-        self.kernel_type = "poly"
-        self.ninits = 40
+        self.Cp = cp
+        self.leaf_size = leaf_size
+        self.kernel_type = kernel_type
+        self.ninits = ninits
         self.gamma_type = "auto"
         self.complement = complement
         self.score_criterium = score_criterium
@@ -159,15 +159,16 @@ class circadianClock:
 
         self.celerities = self.simulator.getAllCelerities()
         self.dims = len(self.celerities)  # problem dimensions
-        self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
-        self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
+        self.lb = np.ones(self.dims) * -2  # lower bound for each dimension
+        self.ub = np.ones(self.dims) * 2  # upper bound for each dimension
         self.tracker = tracker('circadianClock' + str(self.complement))  # defined in functions.py
 
     def objective_function(self, x):
         for i in range(self.dims):
             self.celerities[i].setValue(x[i])
 
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+        # self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
+        self.simulator.reset()
         self.simulator.simulation(self.celerities)
         return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
@@ -181,12 +182,12 @@ class circadianClock:
 
 
 class cellCycleBehaegel:
-    def __init__(self, complement='', score_criterium = 3):
+    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
         # tunable hyper-parameters in LA-MCTS
-        self.Cp = 10
-        self.leaf_size = 10
-        self.kernel_type = "poly"
-        self.ninits = 40
+        self.Cp = cp
+        self.leaf_size = leaf_size
+        self.kernel_type = kernel_type
+        self.ninits = ninits
         self.gamma_type = "auto"
         self.complement = complement
         self.score_criterium = score_criterium
@@ -221,12 +222,12 @@ class cellCycleBehaegel:
 
 
 class testHgrn:
-    def __init__(self, complement='', score_criterium = 3):
+    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
         # tunable hyper-parameters in LA-MCTS
-        self.Cp = 10
-        self.leaf_size = 10
-        self.kernel_type = "poly"
-        self.ninits = 40
+        self.Cp = cp
+        self.leaf_size = leaf_size
+        self.kernel_type = kernel_type
+        self.ninits = ninits
         self.gamma_type = "auto"
         self.complement = complement
         self.score_criterium = score_criterium

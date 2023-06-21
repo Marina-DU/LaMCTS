@@ -16,13 +16,16 @@ parser.add_argument('--bb-optimizer', type=str, help='specify the black-box opti
 parser.add_argument('--samples-optimizer', type=int,
                     help='number of samples/evaluations (for bo, de, and pso) or max number of samples/evaluations (for turbo)',
                     default=None)
-parser.add_argument('--ninits', type=int, help='specify the number of random samples used in initializations')
-parser.add_argument('--cp', type=float, help='specify the Cp for MCTS')
-parser.add_argument('--leaf-size', type=int, help='specify the tree leaf size')
-parser.add_argument('--kernel-type', type=str, help='specify the kernel type')
 parser.add_argument('--de-type', type=str, help='specify type of DE regarding the mutation step', default=None)
-parser.add_argument('--hgrn-criterium', type=int, help='scoring criterium for hgrn functions', choices=[3, 4],
-                    default=None)
+parser.add_argument('--cp', type=int,
+                    help='LA-MCTS hyperparameter: is the exploration parameter in the UCB formula for MCTS', default=10)
+parser.add_argument('--leaf-size', type=int,
+                    help='LA-MCTS hyperparameter: splittable threshold to determine if a node can be spit', default=10)
+parser.add_argument('--kernel-type', type=str, help='LA-MCTS hyperparameter: SVM kernel in the splitting step ',
+                    default="poly")
+parser.add_argument('--ninits', type=int, help='LA-MCTS hyperparameter ninits for the initial number of random samples',
+                    default=40)
+parser.add_argument('--hgrn-criterium', type=int, help='LA-MCTS hyperparameter: scoring criterium for hgrn functions')
 
 args = parser.parse_args()
 
@@ -57,11 +60,11 @@ elif args.func == 'swimmer':
 elif args.func == 'hopper':
     f = Hopper()
 elif args.func == 'circadianClock':
-    f = circadianClock(complement=complement)
+    f = circadianClock(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 elif args.func == 'cellCycle':
-    f = cellCycleBehaegel(complement=complement)
+    f = cellCycleBehaegel(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 elif args.func == 'testHgrn':
-    f = testHgrn(complement=complement)
+    f = testHgrn(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 else:
     print('function not defined')
     os._exit(1)
