@@ -2,7 +2,9 @@
 # All rights reserved.
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-# 
+#
+import datetime
+
 import gym
 import json
 import os
@@ -14,11 +16,16 @@ from eval.eval import f_objective
 
 
 class tracker:
-    def __init__(self, foldername):
+    def __init__(self, foldername, celerities=False):
         self.counter = 0
         self.results = []
         self.curt_best = float("inf")
         self.foldername = "results/" + foldername
+        self.celerities = celerities
+        if self.celerities:
+            now = datetime.datetime.now()
+            timestamp = now.strftime("%Y%m%d_%H%M%S")
+            self.celerities_file = self.foldername + '/' + foldername + '_' + timestamp + '_celerities.txt'
         try:
             os.mkdir(self.foldername)
         except OSError:
@@ -35,6 +42,19 @@ class tracker:
     def track(self, result):
         if result < self.curt_best:
             self.curt_best = result
+        self.results.append(self.curt_best)
+        if len(self.results) % 100 == 0:
+            self.dump_trace()
+
+    def track_celerities(self, result, current_celerities):
+        assert self.celerities
+        if result < self.curt_best:
+            self.curt_best = result
+            with open(self.celerities_file, 'a+') as file:
+                celerity_values = []
+                for celerity in current_celerities:
+                    celerity_values.append(celerity.getValue())
+                file.write(str(celerity_values) + '\n')
         self.results.append(self.curt_best)
         if len(self.results) % 100 == 0:
             self.dump_trace()
@@ -161,14 +181,13 @@ class circadianClock:
         self.dims = len(self.celerities)  # problem dimensions
         self.lb = np.ones(self.dims) * -2  # lower bound for each dimension
         self.ub = np.ones(self.dims) * 2  # upper bound for each dimension
-        self.tracker = tracker('circadianClock' + str(self.complement))  # defined in functions.py
+        self.tracker = tracker('circadianClock' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         for i in range(self.dims):
             self.celerities[i].setValue(x[i])
 
-        # self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
-        self.simulator.reset()
         self.simulator.simulation(self.celerities)
         return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
@@ -177,7 +196,7 @@ class circadianClock:
         assert len(x) == self.dims
 
         result = self.objective_function(x)
-        self.tracker.track(result)
+        self.tracker.track_celerities(result, self.celerities)
         return result
 
 
@@ -202,13 +221,13 @@ class cellCycleBehaegel:
         self.dims = len(self.celerities)  # problem dimensions
         self.lb = np.ones(self.dims) * -7  # lower bound for each dimensions
         self.ub = np.ones(self.dims) * 7  # upper bound for each dimensions
-        self.tracker = tracker('cellCycleBehaegel' + str(self.complement))  # defined in functions.py
+        self.tracker = tracker('cellCycleBehaegel' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         for i in range(self.dims):
             self.celerities[i].setValue(x[i])
 
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         self.simulator.simulation(self.celerities)
         return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
@@ -217,12 +236,12 @@ class cellCycleBehaegel:
         assert len(x) == self.dims
 
         result = self.objective_function(x)
-        self.tracker.track(result)
+        self.tracker.track_celerities(result, self.celerities)
         return result
 
 
 class testHgrn:
-    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
+    def __init__(self, complement='', cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40, score_criterium = 3):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = cp
         self.leaf_size = leaf_size
@@ -242,13 +261,13 @@ class testHgrn:
         self.dims = len(self.celerities)  # problem dimensions
         self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
         self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
-        self.tracker = tracker('testHgrn' + str(self.complement))  # defined in functions.py
+        self.tracker = tracker('testHgrn' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
+        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         for i in range(self.dims):
             self.celerities[i].setValue(x[i])
 
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
         self.simulator.simulation(self.celerities)
         return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
@@ -257,7 +276,7 @@ class testHgrn:
         assert len(x) == self.dims
 
         result = self.objective_function(x)
-        self.tracker.track(result)
+        self.tracker.track_celerities(result, self.celerities)
         return result
 
 

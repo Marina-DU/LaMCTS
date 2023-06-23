@@ -25,7 +25,7 @@ parser.add_argument('--kernel-type', type=str, help='LA-MCTS hyperparameter: SVM
                     default="poly")
 parser.add_argument('--ninits', type=int, help='LA-MCTS hyperparameter ninits for the initial number of random samples',
                     default=40)
-parser.add_argument('--hgrn-criterium', type=int, help='LA-MCTS hyperparameter: scoring criterium for hgrn functions')
+# parser.add_argument('--hgrn-criterium', type=int, help='LA-MCTS hyperparameter: scoring criterium for hgrn functions')
 
 args = parser.parse_args()
 
@@ -35,12 +35,12 @@ if args.samples_optimizer is None:
 if args.bb_optimizer == 'de' and args.de_type is None:
     args.de_type = 'rand'
 
-if args.hgrn_criterium is None and args.func in ["circadianClock", "cellCycle", "testHgrn"]:
-    args.hgrn_criterium = 3
+# if args.hgrn_criterium is None and args.func in ["circadianClock", "cellCycle", "testHgrn"]:
+#     args.hgrn_criterium = 3
 
 complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + \
-             str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples') + \
-             ('_crit' + str(args.hgrn_criterium) if args.hgrn_criterium is not None else '')
+             str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples')
+             # + ('_crit' + str(args.hgrn_criterium) if args.hgrn_criterium is not None else '')
 
 f = None
 iteration = 0
@@ -60,11 +60,11 @@ elif args.func == 'swimmer':
 elif args.func == 'hopper':
     f = Hopper()
 elif args.func == 'circadianClock':
-    f = circadianClock(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
+    f = circadianClock(complement=complement, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 elif args.func == 'cellCycle':
-    f = cellCycleBehaegel(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
+    f = cellCycleBehaegel(complement=complement, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 elif args.func == 'testHgrn':
-    f = testHgrn(complement=complement, score_criterium=args.hgrn_criterium, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
+    f = testHgrn(complement=complement, cp=args.cp, leaf_size=args.leaf_size, kernel_type=args.kernel_type, ninits=args.ninits)
 else:
     print('function not defined')
     os._exit(1)

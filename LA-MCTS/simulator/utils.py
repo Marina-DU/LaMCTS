@@ -15,7 +15,7 @@ def chooseAmong(listOfVariables:list[Variable], s:int=1234) -> Variable:
     Returns a random item from a specified list of variables and a defined seed for reproducibility
     """
     assert len(listOfVariables) > 0, "List should not be empty to choose a random item position"
-    seed(s)
+    # seed(s) # Leaving this on hinders convergence for LA-MCTS
     #print(randrange(0, len(listOfVariables)))
     return listOfVariables[randrange(0, len(listOfVariables))]
 

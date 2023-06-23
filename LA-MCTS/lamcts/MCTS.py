@@ -267,7 +267,7 @@ class MCTS:
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):
-                    if self.solver_type == 'bo' :
+                    if self.solver_type == 'bo':
                         value = self.collect_samples(samples[idx])
                     elif self.solver_type == 'turbo' or self.solver_type == 'de' or self.solver_type == 'pso':
                         value = self.collect_samples(samples[idx], values[idx])
