@@ -36,12 +36,12 @@ class Node:
 
         self.bag = []
 
-        # # for DE
-        # self.population = np.array([])
-        # self.population_ev = np.array([])
-        # self.target_index = 0
-        # self.generation = 1
-        # self.best_in_gen_idx = None
+        # for DE
+        self.population = np.array([])
+        self.population_ev = np.array([])
+        self.target_index = 0
+        self.generation = 1
+        self.best_in_gen_idx = None
 
         # # for PSO
         # self.particles = []
@@ -146,30 +146,35 @@ class Node:
         proposed_X = self.classifier.propose_samples_bo(num_samples, path, lb, ub, samples)
         return proposed_X
 
-    def propose_sample_de(self, path, func, num_samples=1, de_type='rand'):
+    def propose_sample_de(self, path, func, num_samples=10, de_type='rand', n_init=10):
         assert de_type in ['rand', 'best'], "de_type can only be 'rand' or 'best'"
 
-        # samples = copy.deepcopy(self.bag)
-        #
-        # if len(self.population) == 0:
-        #     self.population = np.array([sample[0] for sample in samples])
-        #     self.population_ev = np.array([sample[1] for sample in samples])
-        #
-        # while len(self.population) < 4:
-        #     sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
-        #     sample_ev = func(sample)
-        #     samples.append((sample, sample_ev))
-        #     self.population = np.concatenate((self.population, [sample]))
-        #     self.population_ev = np.concatenate((self.population_ev, [sample_ev]))
-        #
+        samples = copy.deepcopy(self.bag)
+
+        if len(self.population) == 0:
+            self.population = np.array([sample[0] for sample in samples])
+            self.population_ev = np.array([sample[1] for sample in samples])
+
+        while len(self.population) < n_init:
+            sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
+            self.population = np.concatenate((self.population, [sample]))
+            self.population_ev = np.concatenate((self.population_ev, [None]))
+
+        if len(self.population) < n_init:
+            sorted_idx = np.argsort(self.population_ev)
+            self.population = self.population[sorted_idx]
+            self.population_ev = self.population_ev[sorted_idx]
+            self.population = self.population[:n_init]
+            self.population_ev = self.population_ev[:n_init]
+
         # self.update_bag(samples)
 
         if de_type == 'rand':
             # proposed_X, fX = self.de_reproduction_sampling(func, num_samples=num_samples)
-            proposed_X, fX = self.classifier.propose_sample_de(func, path, num_samples)
+            proposed_X, fX = self.classifier.propose_sample_de(func, path, num_samples, self.population, self.population_ev)
         else:
             # proposed_X, fX = self.de_reproduction_sampling_best(func, num_samples=num_samples)
-            proposed_X, fX = self.classifier.propose_sample_de_best(func, path, num_samples)
+            proposed_X, fX = self.classifier.propose_sample_de_best(func, path, num_samples, self.population, self.population_ev)
         fX = fX * -1
         return proposed_X, fX
 

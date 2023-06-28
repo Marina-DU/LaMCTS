@@ -5,6 +5,7 @@
 #   August, 2017
 #
 # ------------------------------------------------------------------------------+
+import sys
 
 # --- IMPORT DEPENDENCIES ------------------------------------------------------+
 import numpy as np
@@ -53,15 +54,15 @@ def minimize(cost_func, lb, ub, population: np.array, mutation_factor=0.8, recom
 # --- CONSTANTS ----------------------------------------------------------------+
 
 
-def de_reproduction_sampling(population, cost_func, lb, ub, num_samples=1, max_gen=10, mutation_factor=0.8,
+def de_reproduction_sampling(population, population_ev, cost_func, lb, ub, num_samples=10, mutation_factor=0.8,
                              recombination_prob=0.9):
     popsize = population.shape[0]
 
-    population_ev = np.full(popsize, None)
     target_index = 0
     trial_vectors = []
     trial_evals = []
     generations = 1
+    max_gen = min(50 * 10 ** (0.006 * num_samples), 10000)
 
     while len(trial_vectors) < num_samples and generations <= max_gen:
 
@@ -93,33 +94,36 @@ def de_reproduction_sampling(population, cost_func, lb, ub, num_samples=1, max_g
         if score_trial < score_target:
             population[target_index] = v_trial
             population_ev[target_index] = score_trial
-            print('better', score_trial, v_trial)
+            print(f'better: trial {score_trial} target {score_target}')
+            print(x_t)
+            trial_vectors.append(v_trial)
+            trial_evals.append(score_trial)
         else:
-            print('worse', score_target, x_t)
-
-        trial_vectors.append(v_trial)
-        trial_evals.append(score_trial)
+            print(f'worse: trial {score_trial} target {score_target}')
+            print(x_t)
 
         target_index += 1
         if target_index >= popsize:
-            print("generation ",generations)
+            print("generation ", generations)
             generations += 1
             target_index = 0
 
     return np.array(trial_vectors), np.array(trial_evals)
 
 
-def de_best_reproduction_sampling(population, cost_func, lb, ub, num_samples=1, max_gen=10, mutation_factor=0.8,
+def de_best_reproduction_sampling(population, population_ev, cost_func, lb, ub, num_samples=10, mutation_factor=0.8,
                                   recombination_prob=0.9):
     popsize = population.shape[0]
 
-    population_ev = [cost_func(x) for x in population]
+    for idx in range(len(population_ev)):
+        if population_ev[idx] is None:
+            population_ev[idx] = cost_func(population[idx])
+
     target_index = 0
-    generations = 1
-
-
     trial_vectors = []
     trial_evals = []
+    generations = 1
+    max_gen = min(50 * 10 ** (0.006 * num_samples), 10000)
 
     while len(trial_vectors) < num_samples and generations <= max_gen:
 
@@ -151,12 +155,13 @@ def de_best_reproduction_sampling(population, cost_func, lb, ub, num_samples=1, 
         if score_trial < score_target:
             population[target_index] = v_trial
             population_ev[target_index] = score_trial
-            print('   >', score_trial, v_trial)
+            print(f'better: trial {score_trial} target {score_target}')
+            print(x_t)
+            trial_vectors.append(v_trial)
+            trial_evals.append(score_trial)
         else:
-            print('   >', score_target, x_t)
-
-        trial_vectors.append(v_trial)
-        trial_evals.append(score_trial)
+            print(f'worse: trial {score_trial} target {score_target}')
+            print(x_t)
 
         target_index += 1
         if target_index >= popsize:

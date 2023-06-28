@@ -17,7 +17,7 @@ class tracker:
         self.curt_best_x = None
         self.foldername = "results/" + foldername
         try:
-            os.mkdir(foldername)
+            os.mkdir(self.foldername)
         except OSError:
             print("Creation of the directory %s failed" % foldername)
         else:

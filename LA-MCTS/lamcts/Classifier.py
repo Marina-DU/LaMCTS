@@ -342,30 +342,27 @@ class Classifier():
         proposed_X = X[indices]
         return proposed_X
 
-    def propose_sample_de(self, func, path, num_samples):
+    def propose_sample_de(self, func, path, num_samples, samples, samples_ev):
         """ Proposes the next sampling point by optimizing the acquisition function.
         Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
         Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
         Returns: Location of the acquisition function maximum. """
         assert path is not None and len(path) >= 0
 
-        n_init = 30
-        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
 
-        proposed_X, population = de_simple.de_reproduction_sampling(x_init, func, func.lb, func.ub, num_samples)
+        proposed_X, population = de_simple.de_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
 
 
         return proposed_X, population
 
-    def propose_sample_de_best(self, func, path, num_samples):
+    def propose_sample_de_best(self, func, path, num_samples, samples, samples_ev):
         """ Proposes the next sampling point by optimizing the acquisition function.
         Args: acquisition: Acquisition function. X_sample: Sample locations (n x d).
         Y_sample: Sample values (n x 1). gpr: A GaussianProcessRegressor fitted to samples.
         Returns: Location of the acquisition function maximum. """
-        n_init = 30
-        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
+        assert path is not None and len(path) >= 0
 
-        proposed_X, population = de_simple.de_best_reproduction_sampling(x_init, func, func.lb, func.ub, num_samples)
+        proposed_X, population = de_simple.de_best_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
 
         return proposed_X, population
 
