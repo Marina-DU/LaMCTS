@@ -39,8 +39,8 @@ if args.bb_optimizer == 'de' and args.de_type is None:
 #     args.hgrn_criterium = 3
 
 complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + \
-             str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples')
-             # + ('_crit' + str(args.hgrn_criterium) if args.hgrn_criterium is not None else '')
+             str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples') + \
+             f'_cp{args.cp}_ls{args.leaf_size}_kt{args.kernel_type}_ni{args.ninits}'
 
 f = None
 iteration = 0

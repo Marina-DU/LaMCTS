@@ -349,11 +349,11 @@ class Classifier():
         Returns: Location of the acquisition function maximum. """
         assert path is not None and len(path) >= 0
 
+        proposed_x, fx = de_simple.de_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
 
-        proposed_X, population = de_simple.de_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
+        fx = fx * -1
 
-
-        return proposed_X, population
+        return proposed_x, fx
 
     def propose_sample_de_best(self, func, path, num_samples, samples, samples_ev):
         """ Proposes the next sampling point by optimizing the acquisition function.
@@ -362,9 +362,11 @@ class Classifier():
         Returns: Location of the acquisition function maximum. """
         assert path is not None and len(path) >= 0
 
-        proposed_X, population = de_simple.de_best_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
+        proposed_x, fx = de_simple.de_best_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub,
+                                                                         num_samples)
+        fx = fx * -1
 
-        return proposed_X, population
+        return proposed_x, fx
 
     ###########################
     # sampling with turbo
@@ -405,6 +407,7 @@ class Classifier():
         proposed_x, fx = particle.pso_sampling(func, x_init, num_samples, max_iterations=100)
         fx = fx * -1
         return proposed_x, fx
+
     ###########################
     # random sampling
     ###########################

@@ -153,7 +153,7 @@ class Node:
 
         if len(self.population) == 0:
             self.population = np.array([sample[0] for sample in samples])
-            self.population_ev = np.array([sample[1] for sample in samples])
+            self.population_ev = np.array([sample[1]*-1 for sample in samples])
 
         while len(self.population) < n_init:
             sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
@@ -175,7 +175,7 @@ class Node:
         else:
             # proposed_X, fX = self.de_reproduction_sampling_best(func, num_samples=num_samples)
             proposed_X, fX = self.classifier.propose_sample_de_best(func, path, num_samples, self.population, self.population_ev)
-        fX = fX * -1
+
         return proposed_X, fX
 
     def propose_samples_turbo(self, num_samples, path, func):
