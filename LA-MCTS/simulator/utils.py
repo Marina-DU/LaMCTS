@@ -8,6 +8,7 @@ from random import randrange, seed
 from itertools import product
 from simulator.constants import *
 from simulator.celeritiy import Celerity
+from math import ceil
 
 
 def chooseAmong(listOfVariables:list[Variable], s:int=1234) -> Variable:
@@ -46,9 +47,14 @@ def generateAllCelerities(variables: list[Variable]) -> list[Celerity]:
     """
     Based on the influence graph informations i.e variables and predecessors,
     Returns the list of celerities to find.
+    Might be different -> for all discrete state use the function that returns the celerities inside.
+    # print("*********")
+    # celerities = HybridState([0,1,0], [1.,0.,1.]).getCeleritiesInDiscreteState(variables, all_celerities)
+    # for c in celerities:
+    #     print(c)
+    # print("***************")
     """
     allDiscreteStates = generateAllDiscreteStates(variables)
-
     listCelerities = []
     for d in allDiscreteStates:
         for var in variables:
@@ -56,3 +62,67 @@ def generateAllCelerities(variables: list[Variable]) -> list[Celerity]:
             if all(not(c.same(x)) for x in listCelerities):
                 listCelerities.append(c)
     return listCelerities
+
+def generateCeleritiesToOptimize(discreteStates, variables: list[Variable]) -> list[Celerity]:
+    """
+    Based on the influence graph informations i.e variables and predecessors,
+    Returns the list of celerities to find.
+    Might be different -> for all discrete state use the function that returns the celerities inside.
+    # print("*********")
+    # celerities = HybridState([0,1,0], [1.,0.,1.]).getCeleritiesInDiscreteState(variables, all_celerities)
+    # for c in celerities:
+    #     print(c)
+    # print("***************")
+    """
+    listCelerities = []
+    for i in range(len(discreteStates)):
+        d = discreteStates[i]
+        for var in variables:
+            c = Celerity(var.getName(), var.resourcesOfThisVariableAtDiscreteState(d), d[var.getId()])
+            if all(not(c.same(x)) for x in listCelerities):
+                listCelerities.append(c)
+    return listCelerities
+
+def generateCeleritiesToOptimizeAndRanges(BK, variables: list[Variable]) -> list[Celerity]:
+    """
+    Based on the influence graph informations i.e variables and predecessors,
+    Returns the list of celerities to find.
+    Might be different -> for all discrete state use the function that returns the celerities inside.
+    # print("*********")
+    # celerities = HybridState([0,1,0], [1.,0.,1.]).getCeleritiesInDiscreteState(variables, all_celerities)
+    # for c in celerities:
+    #     print(c)
+    # print("***************")
+    """
+    time = BK[0]
+    discreteStates = BK[4]
+    listCelerities = []
+    timeRangeCelerities = []
+    for i in range(len(discreteStates)):
+        d = discreteStates[i]
+        for var in variables:
+            c = Celerity(var.getName(), var.resourcesOfThisVariableAtDiscreteState(d), d[var.getId()])
+            if all(not(c.same(x)) for x in listCelerities):
+                listCelerities.append(c)
+                timeRangeCelerities.append(float(ceil(1./time[i])))
+            else:
+                idx=0
+                for j in range(len(listCelerities)):
+                    if listCelerities[j].same(c):
+                        idx=i
+                        break
+                timeRangeCelerities[idx] =  max(float(ceil(1./time[i])),timeRangeCelerities[idx])
+    return listCelerities, timeRangeCelerities
+
+# def generateCeleritiesByState(variables: list[Variable]):
+
+#     allDiscreteStates = generateAllDiscreteStates(variables)
+#     listCelerities = []
+#     groups= {}
+#     for d in allDiscreteStates:
+#         for var in variables:
+#             c = Celerity(var.getName(), var.resourcesOfThisVariableAtDiscreteState(d), d[var.getId()])
+#             if all(not(c.same(x)) for x in listCelerities):
+#                 listCelerities.append(c)
+#                 groups[str(d)].append(c)
+#     return listCelerities
