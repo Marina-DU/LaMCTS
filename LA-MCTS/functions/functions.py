@@ -8,11 +8,13 @@ import datetime
 import gym
 import json
 import os
+import uuid
 
 import utils.utils as utils
 import numpy as np
 from simulator.simulator import Simulator
 from eval.eval import f_objective
+from simulator.utils import generateCeleritiesToOptimize
 
 
 class tracker:
@@ -24,7 +26,7 @@ class tracker:
         self.celerities = celerities
         if self.celerities:
             now = datetime.datetime.now()
-            timestamp = now.strftime("%Y%m%d_%H%M%S")
+            timestamp = now.strftime("%Y%m%d_%H%M%S") + '_' + str(uuid.uuid4())[:8]
             self.celerities_file = self.foldername + '/' + foldername + '_' + timestamp + '_celerities.txt'
         try:
             os.mkdir(self.foldername)
@@ -54,7 +56,7 @@ class tracker:
                 celerity_values = []
                 for celerity in current_celerities:
                     celerity_values.append(celerity.getValue())
-                file.write(str(celerity_values) + '\n')
+                file.write(str(result) + '\t' + str(celerity_values) + '\n')
         self.results.append(self.curt_best)
         if len(self.results) % 100 == 0:
             self.dump_trace()
@@ -161,7 +163,7 @@ class Rosenbrock:
 
 
 class circadianClock:
-    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
+    def __init__(self, complement='', score_criterium=3, cp=10, leaf_size=10, kernel_type="poly", ninits=40):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = cp
         self.leaf_size = leaf_size
@@ -178,18 +180,29 @@ class circadianClock:
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
 
         self.celerities = self.simulator.getAllCelerities()
-        self.dims = len(self.celerities)  # problem dimensions
+        self.cels_to_opt = generateCeleritiesToOptimize(self.BK[4], self.variables)
+        self.idxsTabOfCelsToOpt = utils.getIdxsOfCelToOptimize(
+            self.celerities,
+            self.cels_to_opt
+        )
+        self.dims = len(self.cels_to_opt)  # problem dimensions
+        assert self.dims == len(self.idxsTabOfCelsToOpt)
         self.lb = np.ones(self.dims) * -2  # lower bound for each dimension
         self.ub = np.ones(self.dims) * 2  # upper bound for each dimension
         self.tracker = tracker('circadianClock' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
-        for i in range(self.dims):
-            self.celerities[i].setValue(x[i])
+        self.celerities = self.simulator.getAllCelerities()
+        celerity_values = []
+        a = 0
+        for idxCel in range(len(self.celerities)):
+            if idxCel in self.idxsTabOfCelsToOpt:
+                self.celerities[idxCel].setValue(x[a])
+                a += 1
+            celerity_values.append(self.celerities[idxCel].getValue())
+        self.simulator.reset()
 
-        self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
+        return f_objective(celerity_values, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x
@@ -201,7 +214,7 @@ class circadianClock:
 
 
 class cellCycleBehaegel:
-    def __init__(self, complement='', score_criterium = 3, cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40):
+    def __init__(self, complement='', score_criterium=3, cp=10, leaf_size=10, kernel_type="poly", ninits=40):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = cp
         self.leaf_size = leaf_size
@@ -218,18 +231,29 @@ class cellCycleBehaegel:
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
 
         self.celerities = self.simulator.getAllCelerities()
-        self.dims = len(self.celerities)  # problem dimensions
+        self.cels_to_opt = generateCeleritiesToOptimize(self.BK[4], self.variables)
+        self.idxsTabOfCelsToOpt = utils.getIdxsOfCelToOptimize(
+            self.celerities,
+            self.cels_to_opt
+        )
+        self.dims = len(self.cels_to_opt)  # problem dimensions
+        assert self.dims == len(self.idxsTabOfCelsToOpt)
         self.lb = np.ones(self.dims) * -7  # lower bound for each dimensions
         self.ub = np.ones(self.dims) * 7  # upper bound for each dimensions
         self.tracker = tracker('cellCycleBehaegel' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
-        for i in range(self.dims):
-            self.celerities[i].setValue(x[i])
+        self.celerities = self.simulator.getAllCelerities()
+        celerity_values = []
+        a = 0
+        for idxCel in range(len(self.celerities)):
+            if idxCel in self.idxsTabOfCelsToOpt:
+                self.celerities[idxCel].setValue(x[a])
+                a += 1
+            celerity_values.append(self.celerities[idxCel].getValue())
+        self.simulator.reset()
 
-        self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
+        return f_objective(celerity_values, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x
@@ -241,7 +265,7 @@ class cellCycleBehaegel:
 
 
 class testHgrn:
-    def __init__(self, complement='', cp = 10, leaf_size = 10, kernel_type = "poly", ninits = 40, score_criterium = 3):
+    def __init__(self, complement='', cp=10, leaf_size=10, kernel_type="poly", ninits=40, score_criterium=3):
         # tunable hyper-parameters in LA-MCTS
         self.Cp = cp
         self.leaf_size = leaf_size
@@ -258,18 +282,29 @@ class testHgrn:
         self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
 
         self.celerities = self.simulator.getAllCelerities()
-        self.dims = len(self.celerities)  # problem dimensions
+        self.cels_to_opt = generateCeleritiesToOptimize(self.BK[4], self.variables)
+        self.idxsTabOfCelsToOpt = utils.getIdxsOfCelToOptimize(
+            self.celerities,
+            self.cels_to_opt
+        )
+        self.dims = len(self.cels_to_opt)  # problem dimensions
+        assert self.dims == len(self.idxsTabOfCelsToOpt)
         self.lb = np.ones(self.dims) * -2  # lower bound for each dimensions
         self.ub = np.ones(self.dims) * 2  # upper bound for each dimensions
         self.tracker = tracker('testHgrn' + str(self.complement), celerities=True)  # defined in functions.py
 
     def objective_function(self, x):
-        self.simulator = Simulator(self.variables, self.initialHybridState, self.BK)
-        for i in range(self.dims):
-            self.celerities[i].setValue(x[i])
+        self.celerities = self.simulator.getAllCelerities()
+        celerity_values = []
+        a = 0
+        for idxCel in range(len(self.celerities)):
+            if idxCel in self.idxsTabOfCelsToOpt:
+                self.celerities[idxCel].setValue(x[a])
+                a += 1
+            celerity_values.append(self.celerities[idxCel].getValue())
+        self.simulator.reset()
 
-        self.simulator.simulation(self.celerities)
-        return f_objective(x, self.simulator, self.BK, criteria=self.score_criterium)[0]
+        return f_objective(celerity_values, self.simulator, self.BK, criteria=self.score_criterium)[0]
 
     def __call__(self, x):
         # some sanity check of x

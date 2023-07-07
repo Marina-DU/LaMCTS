@@ -182,10 +182,30 @@ class Node:
         proposed_X, fX = self.classifier.propose_samples_turbo(num_samples, path, func)
         return proposed_X, fX
 
-    def propose_samples_pso(self, num_samples, path, func):
-        proposed_x, fx = self.classifier.propose_samples_pso(num_samples, path, func)
-        # proposed_x, fx = self.pso_sampling(func, path)
-        # fx = fx * -1
+    def propose_samples_pso(self, num_samples, path, func, n_init=50):
+
+        samples = copy.deepcopy(self.bag)
+
+        if len(self.population) == 0:
+            self.population = np.array([sample[0] for sample in samples])
+            self.population_ev = np.array([sample[1]*-1 for sample in samples])
+
+        while len(self.population) < n_init:
+            sample = self.classifier.propose_rand_samples_sobol(1, path, func.lb, func.ub)[0]
+            self.population = np.concatenate((self.population, [sample]))
+            self.population_ev = np.concatenate((self.population_ev, [None]))
+
+        if len(self.population) < n_init:
+            sorted_idx = np.argsort(self.population_ev)
+            self.population = self.population[sorted_idx]
+            self.population_ev = self.population_ev[sorted_idx]
+            self.population = self.population[:n_init]
+            self.population_ev = self.population_ev[:n_init]
+
+        inertia = 0.7 * 0.3**(self.n / num_samples)
+        print(f'inertia: {inertia}')
+
+        proposed_x, fx = self.classifier.propose_samples_pso(func, path, num_samples, self.population, self.population_ev, inertia )
         return proposed_x, fx
 
     def propose_samples_rand(self, num_samples):

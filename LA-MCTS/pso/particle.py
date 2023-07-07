@@ -55,28 +55,50 @@ def particle_swarm_optimization(func, num_iterations, num_particles=30, inertia_
     return global_best_position, global_best_fitness
 
 
-def pso_sampling(func, x_init, num_samples=1, max_iterations=10000, inertia_weight=0.5, cognitive_weight=0.5,
-                 social_weight=0.5):
-    particles = [Particle(func, x) for x in x_init]
+def pso_sampling(population, population_ev, cost_func, num_samples=10, inertia=0.5, cognitive=2.0, social=2.0):
+
+    swarm = []
+    initial_population = population.copy()
+    for idx in range(len(population_ev)):
+        if population_ev[idx] is None:
+            swarm.append(Particle(cost_func, population[idx], cost_func(population[idx])))
+        else:
+            swarm.append(Particle(cost_func, population[idx], population_ev[idx]))
+
     global_best_fitness = float('inf')
     global_best_position = None
     samples = []
     sample_evals = []
     num_iterations = 0
+    max_iterations = min(50 * 10 ** (0.006 * num_samples), 10000)
 
-    while len(samples) < num_samples and num_iterations < max_iterations:
+    while len(sample_evals) < num_samples and num_iterations < max_iterations:
         num_iterations += 1
-        for particle in particles:
-            particle.evaluate_fitness()
+        for particle in swarm:
+            # we already have the fitness on the first iteration
+            if num_iterations != 1:
+                particle.evaluate_fitness()
+
+
             if particle.best_fitness < global_best_fitness:
+                if particle.best_position not in initial_population:
+                    sample_evals.append(particle.current_fitness)
+                    samples.append(particle.position)
+
+                print("NEW BEST FITNESS: ", particle.best_fitness)
+                print("OLD BEST FITNESS: ", global_best_fitness)
                 global_best_fitness = particle.best_fitness
                 global_best_position = particle.best_position.copy()
-                print("best fitness: ", global_best_fitness)
-                samples.append(particle.position)
-                sample_evals.append(particle.current_fitness)
+                assert particle.current_fitness == particle.best_fitness
 
-        for particle in particles:
-            particle.update_velocity(global_best_position, inertia_weight, cognitive_weight, social_weight)
+            else:
+                print("WROSE PSO")
+                print("particle.best_fitness: ", particle.best_fitness)
+                print("global_best_fitness: ", global_best_fitness)
+
+
+        for particle in swarm:
+            particle.update_velocity(global_best_position, inertia, cognitive, social)
             particle.update_position()
 
     return np.array(samples), np.array(sample_evals)

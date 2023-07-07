@@ -27,7 +27,7 @@ class MCTS:
     #############################################
 
     def __init__(self, lb, ub, dims, ninits, func, Cp=1, leaf_size=20, kernel_type="rbf", gamma_type="auto",
-                 solver_type='bo', solver_evals=None, de_type=None):
+                 solver_type='bo', solver_evals=None, de_type=None, pso_pop_size=None):
         self.dims = dims
         self.samples = []
         self.nodes = []
@@ -57,6 +57,9 @@ class MCTS:
             self.de_type = 'rand'
         else:
             self.de_type = de_type
+        if solver_type == 'pso' and pso_pop_size is None:
+            pso_pop_size = 50
+        self.pso_pop_size = pso_pop_size
 
         print("gamma_type:", gamma_type)
 
@@ -263,7 +266,7 @@ class MCTS:
                 elif self.solver_type == 'de':
                     samples, values = leaf.propose_sample_de(path, self.func, self.solver_evals, self.de_type)
                 elif self.solver_type == 'pso':
-                    samples, values = leaf.propose_samples_pso(self.solver_evals, path, self.func)
+                    samples, values = leaf.propose_samples_pso(self.solver_evals, path, self.func, self.pso_pop_size)
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):

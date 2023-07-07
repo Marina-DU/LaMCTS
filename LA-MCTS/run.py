@@ -17,7 +17,7 @@ parser.add_argument('--samples-optimizer', type=int,
                     help='number of samples/evaluations (for bo, de, and pso) or max number of samples/evaluations (for turbo)',
                     default=None)
 parser.add_argument('--de-type', type=str, help='specify type of DE regarding the mutation step', default=None)
-parser.add_argument('--cp', type=int,
+parser.add_argument('--cp', type=float,
                     help='LA-MCTS hyperparameter: is the exploration parameter in the UCB formula for MCTS', default=10)
 parser.add_argument('--leaf-size', type=int,
                     help='LA-MCTS hyperparameter: splittable threshold to determine if a node can be spit', default=10)
@@ -25,6 +25,7 @@ parser.add_argument('--kernel-type', type=str, help='LA-MCTS hyperparameter: SVM
                     default="poly")
 parser.add_argument('--ninits', type=int, help='LA-MCTS hyperparameter ninits for the initial number of random samples',
                     default=40)
+parser.add_argument('--pso-pop-size', type=int, help='Size of the population for pso', default=50)
 # parser.add_argument('--hgrn-criterium', type=int, help='LA-MCTS hyperparameter: scoring criterium for hgrn functions')
 
 args = parser.parse_args()
@@ -39,6 +40,7 @@ if args.bb_optimizer == 'de' and args.de_type is None:
 #     args.hgrn_criterium = 3
 
 complement = '_' + args.bb_optimizer + ('_' + args.de_type if args.de_type is not None else '') + '_' + \
+             (f'popsize{args.pso_pop_size}_' if args.bb_optimizer == 'pso' else '') + \
              str(args.samples_optimizer) + ('samples' if args.bb_optimizer != 'turbo' else 'max_samples') + \
              f'_cp{args.cp}_ls{args.leaf_size}_kt{args.kernel_type}_ni{args.ninits}'
 

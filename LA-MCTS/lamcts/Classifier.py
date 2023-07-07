@@ -401,10 +401,10 @@ class Classifier():
 
         return proposed_X, fX
 
-    def propose_samples_pso(self, num_samples, path, func):
-        n_init = 30
-        x_init = self.propose_rand_samples_sobol(n_init, path, func.lb, func.ub)
-        proposed_x, fx = particle.pso_sampling(func, x_init, num_samples, max_iterations=100)
+    def propose_samples_pso(self, func, path, num_samples, samples, samples_ev, inertia):
+        assert path is not None and len(path) >= 0
+
+        proposed_x, fx = particle.pso_sampling(samples, samples_ev, func, num_samples, inertia)
         fx = fx * -1
         return proposed_x, fx
 
