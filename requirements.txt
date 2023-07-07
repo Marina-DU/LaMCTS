@@ -1,3 +1,5 @@
+about-time==4.2.1
+alive-progress==3.1.4
 antlr4-python3-runtime==4.9.3
 anyio==3.7.0
 argon2-cffi==21.3.0
@@ -5,6 +7,7 @@ argon2-cffi-bindings==21.2.0
 arrow==1.2.3
 asttokens==2.2.1
 attrs==23.1.0
+autograd==1.6.2
 backcall==0.2.0
 bayesian-optimization==1.4.3
 beautifulsoup4==4.12.2
@@ -20,13 +23,17 @@ cycler==0.11.0
 debugpy==1.6.7
 decorator==5.1.1
 defusedxml==0.7.1
+Deprecated==1.2.14
+dill==0.3.6
 exceptiongroup==1.1.1
 executing==1.2.0
 fastjsonschema==2.17.1
 filelock==3.12.0
 fonttools==4.39.3
 fqdn==1.5.1
+future==0.18.3
 gpytorch==0.3.6
+grapheme==0.6.0
 gym==0.26.2
 gym-notices==0.0.8
 idna==3.4
@@ -95,6 +102,7 @@ pure-eval==0.2.2
 pyaml==23.5.8
 pycparser==2.21
 Pygments==2.15.1
+pymoo==0.6.0.1
 pyparsing==3.0.9
 pyrsistent==0.19.3
 python-dateutil==2.8.2
@@ -131,3 +139,4 @@ webcolors==1.13
 webencodings==0.5.1
 websocket-client==1.5.2
 widgetsnbextension==4.0.7
+wrapt==1.15.0
