@@ -19,6 +19,8 @@ def f_objective(X, simulation: Simulator, BK: list, criteria: int = 3, typeFitne
 
     # 1- Set the solution of celerities
     simulation.setCeleritiesValue(X)
+    simulation.reset()
+
     # 2 - Launch the simulation and reset trace
     simulation.simulation()
     trace = simulation.getTrace()

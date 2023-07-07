@@ -1,13 +1,14 @@
 from pymoo.core.problem import ElementwiseProblem
-from eval.utils import *
+# from eval.utils import *
 #euclidean
 from math import dist
 #manhattan
 from scipy.spatial import distance #cityblock
 from simulator.hybridstate import HybridState
 from simulator.simulator import Simulator
-import numpy as np 
+import numpy as np
 import time as timer
+from functions.functions import tracker
 
 
 
@@ -16,18 +17,22 @@ class hGRNProblem(ElementwiseProblem):
     hGRNroblem is an ElementwiseProblem because the _evaluate method needs to be called for each solution.
     """
     def __init__(self, n_var, n_obj, n_constr, xl, xu, simulation:Simulator, BK:list, idxsTabOfCelsToOpt:list[int], criteria:int, typeFitness:str, **kwargs):
-        super().__init__(n_var= n_var, 
-                         n_obj = n_obj, 
-                         n_constr = n_constr, 
-                         xl = xl, 
+        super().__init__(n_var= n_var,
+                         n_obj = n_obj,
+                         n_constr = n_constr,
+                         xl = xl,
                          xu = xu,
                         **kwargs)
+        self.tracker = None
         self.simulation = simulation
         self.BK = BK
         self.idxsTabOfCelsToOpt= idxsTabOfCelsToOpt
         self.criteria = criteria
         self.typeFitness = typeFitness
         self.pBname="hGRNProblem_"+str(self.criteria)+"criteria_"+self.typeFitness
+
+    def initiate_tracker(self, complement):
+        self.tracker = tracker('bioinsp_' + complement, True)
 
 
     def _evaluate(self, solution,  out, *args, **kwargs):
@@ -60,7 +65,7 @@ class hGRNProblem(ElementwiseProblem):
         self.simulation.simulation()
         endProcTimeSimulInd = timer.process_time()
         endWallTimeSimulInd = timer.time()
-        trace = self.simulation.getTrace() 
+        trace = self.simulation.getTrace()
         # for path in trace:
         #    print(path[0], " ", path[1])
         #3 - The core of the evaluation function
@@ -73,7 +78,7 @@ class hGRNProblem(ElementwiseProblem):
         discrete_distance = 2 * self.simulation.getBadTransitionsCount()
         ## blockages distance : number of blockages happened during the simulation (must be minimized and its maximum is the length of the hybrid Hoare triplet)
         blockages_distance = self.simulation.getBlockagesCount()
-    
+
         ## Counter : +1 when an exit point is simulated
         cpt = 0
         #saveTime table : saves the last exit point time simulated, we want to penalize the time duration in one step
@@ -84,7 +89,7 @@ class hGRNProblem(ElementwiseProblem):
         for i in range(1, len(trace)-1):
             #for debug
             #we only need to penalize the first sliding point : there are maximum n-1 slides
-            #get the first sliding point if any 
+            #get the first sliding point if any
             _, prevHybridState = trace[i-1]
             time, hybridState = trace[i]
             nextTime, nextHybridState = trace[i+1]
@@ -102,7 +107,7 @@ class hGRNProblem(ElementwiseProblem):
                     for n in range(len(BK_gliss[cpt])):
                         gliss = BK_gliss[cpt][n]
                         eGliss = BK_gliss_entity[cpt][n]
-                        # Returns True if there is a problem between knowledge and simulation 
+                        # Returns True if there is a problem between knowledge and simulation
                         #if (prevHybridState.getDiscreteState() == hybridState.getDiscreteState()) ^ gliss:
                         if (lastFirstSlidingPoint != ()) ^ gliss:
                             #a) it should have slid
@@ -112,7 +117,7 @@ class hGRNProblem(ElementwiseProblem):
                             #b) it should not have slid
                             elif not gliss:
                                 #Please note that if there are multiple (m) sliding points it will be calculated m times
-                                slide_distance += distance.cityblock(lastFirstSlidingPoint[1].getFractionalPart()[BK_disc_trans_var[cpt].getId()], BK_dist_partFrac[BK_disc_trans_var[cpt].getId()][cpt])
+                                slide_distance += distance.cityblock(np.array([lastFirstSlidingPoint[1].getFractionalPart()[BK_disc_trans_var[cpt].getId()]]), np.array([BK_dist_partFrac[BK_disc_trans_var[cpt].getId()][cpt]]))
                         #There is no apaprent sliding problem but an entity could slide on the wrong face !
                         else:
                             if gliss:
@@ -137,11 +142,11 @@ class hGRNProblem(ElementwiseProblem):
                     if lastFirstSlidingPoint == ():
                         lastFirstSlidingPoint = (time, hybridState)
                         #lastFirstSlidingPoint = (nextTime, nextHybridState)
-        
+
         # firstHS = trace[0][1]
         # finalHS = trace[len(trace)-1][1]
         # dFinalHS = sum([abs(finalHS.getFractionalPart()[i] - firstHS.getFractionalPart()[i]) for i in range(len(finalHS.getFractionalPart()))])
-    
+
 
 
         if self.criteria == 4:
@@ -165,6 +170,8 @@ class hGRNProblem(ElementwiseProblem):
         # print(time_distance)
         # print(slide_distance)
         # print("___________________________________________\n")
+
+        self.tracker.track_celerities(global_fitness, self.simulation.getAllCelerities())
             
         #print(global_fitness)
 

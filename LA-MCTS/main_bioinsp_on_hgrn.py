@@ -6,18 +6,18 @@ from simulator.simulator import Simulator
 # SOEA
 from eval.hGRNProblem import hGRNProblem
 from pymoo.core.callback import Callback
-
+import sys
 # PyMOO imports
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.algorithms.soo.nonconvex.ga_niching import NicheGA
 from pymoo.algorithms.soo.nonconvex.de import DE
 from pymoo.algorithms.soo.nonconvex.cmaes import CMAES
 from pymoo.algorithms.soo.nonconvex.pso import PSO
-from algorithms.randomsearch import optimize, population_optimizer
 from pymoo.core.evaluator import Evaluator
 from pymoo.factory import get_termination
 from pymoo.optimize import minimize
 from pymoo.core.population import Population
+from functions.functions import tracker
 
 # utils and os
 import utils.utils as utils, os, time, math
@@ -25,6 +25,7 @@ import utils.utils as utils, os, time, math
 from random import seed
 import numpy as np
 from datetime import datetime
+import argparse
 from shutil import copyfile
 import csv
 
@@ -32,7 +33,7 @@ import csv
 import matplotlib.pyplot as plt
 
 # pymoo threads
-from pymoo.core.problem import starmap_parallelized_eval
+from pymoo.core.problem import StarmapParallelization
 # processes
 import multiprocessing
 
@@ -148,16 +149,26 @@ class MyCallback(Callback):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", nargs='?', help="Config file for script")
+    args = parser.parse_args()
+
+    if args.config_file:
+        config_file = args.config_file
+    else:
+        config_file = 'exp_settings.ini'
+
     # Start the execution wall time clock for the experiment
     startWallTimeExperiment = datetime.now()
 
     ### A) Set up the experiment based on the information gathered ###
 
     # 1. Read the config file that contains all the experiment settings
-    config = utils.import_settings_configuration(config_file='exp_settings.ini')
+    config = utils.import_settings_configuration(config_file=config_file)
 
     # 2. Parse the SMB file that contains specifications about the biological interaction graph
-    variables, _, initialHybridState, _, BK = utils.parse(config['smb'], False)
+    hgrn = config['smb']
+    variables, _, initialHybridState, _, BK = utils.parse(hgrn, False)
 
     # 3. Set up the simulator
     simulator = Simulator(variables, initialHybridState, BK)
@@ -191,7 +202,7 @@ if __name__ == '__main__':
     # seeds = utils.parse_seeds("seeds.txt", "res_ea_100_OFF/sum/")
     # print(len(seeds))
     # seeds = [i for i in range(1, config['n_test']+1)] #could be config['seed_min'], config['seed_max']
-    seeds = [utils.parse_seeds("seeds.txt", "../results/res_ea_100_OFF/sum/")[i] for i in
+    seeds = [utils.parse_seeds("seeds.txt", "./")[i] for i in
              range(config['from'] - 1, config['n_test'])]
     utils.save_seeds(rootSavePath, seeds, config['debug'])
 
@@ -210,8 +221,8 @@ if __name__ == '__main__':
     problem = hGRNProblem(nbOfVariables, config['objectives'], config['constraints'],
                           [float(-config['celerities_range']) for i in range(nbOfVariables)],
                           [float(config['celerities_range']) for i in range(nbOfVariables)], simulator, BK,
-                          idxsTabOfCelsToOpt, config['criteria'], config['type'], runner=pool.starmap,
-                          func_eval=starmap_parallelized_eval)
+                          idxsTabOfCelsToOpt, config['criteria'], config['type'],runner=pool.starmap,
+                          func_eval=StarmapParallelization)
     # [float(-config['celerities_range']) for i in range(nbOfVariables)]
     # [float(config['celerities_range']) for i in range(nbOfVariables)]
     # 3. Set the termination criterion
@@ -222,6 +233,9 @@ if __name__ == '__main__':
 
     # 1. The first loop iterates over the different algorithms launched
     for algorithm_name in config['algorithm']:
+
+        complement = hgrn + '_' + algorithm_name
+
         if config['debug']:
             print('Algo : ', algorithm_name, '\n')
 
@@ -312,6 +326,18 @@ if __name__ == '__main__':
             #### END CP
 
             # 7. Generate and set up the same initial population for every algorithm
+            match algorithm_name:
+                case 'ga':
+                    problem.initiate_tracker(hgrn+'_ga')
+                case 'ga_niching':
+                    problem.initiate_tracker(hgrn+'_ga_niching')
+                case 'pso':
+                    problem.initiate_tracker(hgrn+'_pso')
+                case 'de':
+                    problem.initiate_tracker(hgrn+'_de')
+                case 'cmaes':
+                    problem.initiate_tracker(hgrn+'_cmaes')
+
             X = (config['celerities_range'] * 2) * np.random.random_sample((config['population_size'], problem.n_var)) - \
                 config['celerities_range']
             # print(len(X))
@@ -386,161 +412,166 @@ if __name__ == '__main__':
 
             # 11. Save information about the monotonic convergence
             # MONOTONIC CONVERGENCE
-            fieldnames = ['seed', 'n_evals', 'opt']
-            if (not (os.path.isfile(subRootSavePath + 'convergence.csv'))):
-                with open(subRootSavePath + 'convergence.csv', 'w') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(fieldnames)
-                    for i in range(len(res.algorithm.callback.data['n_evals'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['n_evals'][i],
-                                         res.algorithm.callback.data['opt'][i][0]])
-
-                if config['debug']:
-                    print("> convergence.CSV created")
-            else:
-                with open(subRootSavePath + 'convergence.csv', 'a') as csvfile:
-                    writer = csv.writer(csvfile)
-                    for i in range(len(res.algorithm.callback.data['n_evals'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['n_evals'][i],
-                                         res.algorithm.callback.data['opt'][i][0]])
-                if config['debug']:
-                    print("> convergence.CSV appended")
-
-                    # POP LEVEL
-            fieldnames = ['seed', 'gen', 'nfe', 'individuals', 'fitness', 'fitnessTime', 'fitnessSlide',
-                          'fitnessDiscrete', 'fitnessBlockages', 'fitnessCycleHS', 'wallTimeSimul', 'cpuTimeSimul',
-                          'wallTimeEval', 'cpuTimeEval']
-            if (not (os.path.isfile(subRootSavePath + 'pop_info_level.csv'))):
-                with open(subRootSavePath + 'pop_info_level.csv', 'w') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(fieldnames)
-                    nfe = 0
-                    # for pop in pops
-                    for i in range(len(res.algorithm.callback.data['individuals'])):
-                        # assert len(set(res.algorithm.callback.data['fitness'][i].flatten())) == len(res.algorithm.callback.data['fitness'][i])
-                        # for ind in individuals
-                        for x in range(len(res.algorithm.callback.data['individuals'][i])):
-                            nfe += 1
-                            # a = [w for w in range(len(res.algorithm.callback.data['fitness'][i])) if res.algorithm.callback.data['fitnessTime'][i][w] + res.algorithm.callback.data['fitnessSlide'][i][w] + res.algorithm.callback.data['fitnessDiscrete'][i][w] + res.algorithm.callback.data['fitnessBlockages'][i][w] in res.algorithm.callback.data['fitness'][i]]
-                            # print(a)
-                            writer.writerow([numSeed, res.algorithm.callback.data['gen'][i], nfe,
-                                             res.algorithm.callback.data['individuals'][i][x].tolist(),
-                                             res.algorithm.callback.data['fitness'][i][x][0],
-                                             res.algorithm.callback.data['fitnessTime'][i][x][0],
-                                             res.algorithm.callback.data['fitnessSlide'][i][x][0],
-                                             res.algorithm.callback.data['fitnessDiscrete'][i][x][0],
-                                             res.algorithm.callback.data['fitnessBlockages'][i][x][0],
-                                             res.algorithm.callback.data['fitnessCycleHS'][i][x][0],
-                                             res.algorithm.callback.data['wallTimeSimulInd'][i][x][0],
-                                             res.algorithm.callback.data['procTimeSimulInd'][i][x][0],
-                                             res.algorithm.callback.data['wallTimeEvalInd'][i][x][0],
-                                             res.algorithm.callback.data['procTimeEvalInd'][i][x][0]])
-                if config['debug']:
-                    print("> pop_info_level.CSV created")
-            else:
-                with open(subRootSavePath + 'pop_info_level.csv', 'a') as csvfile:
-                    writer = csv.writer(csvfile)
-                    nfe = 0
-                    for i in range(len(res.algorithm.callback.data['individuals'])):
-                        # for ind in individuals
-                        for x in range(len(res.algorithm.callback.data['individuals'][i])):
-                            nfe += 1
-                            writer.writerow([numSeed, res.algorithm.callback.data['gen'][i], nfe,
-                                             res.algorithm.callback.data['individuals'][i][x].tolist(),
-                                             res.algorithm.callback.data['fitness'][i][x][0],
-                                             res.algorithm.callback.data['fitnessTime'][i][x][0],
-                                             res.algorithm.callback.data['fitnessSlide'][i][x][0],
-                                             res.algorithm.callback.data['fitnessDiscrete'][i][x][0],
-                                             res.algorithm.callback.data['fitnessBlockages'][i][x][0],
-                                             res.algorithm.callback.data['fitnessCycleHS'][i][x][0],
-                                             res.algorithm.callback.data['wallTimeSimulInd'][i][x],
-                                             res.algorithm.callback.data['procTimeSimulInd'][i][x],
-                                             res.algorithm.callback.data['wallTimeEvalInd'][i][x],
-                                             res.algorithm.callback.data['procTimeEvalInd'][i][x]])
-                #     for i in range(len(res.algorithm.callback.data['individuals'])):
-                #         for x in range(len(res.algorithm.callback.data['individuals'][i])):
-                #             nfe+=1
-                #             writer.writerow([NUM_SEED, res.algorithm.callback.data['gen'][i], nfe, res.algorithm.callback.data['individuals'][i][x], res.algorithm.callback.data['fitness'][i][x],res.algorithm.callback.data['fitnessTime'][i][x], res.algorithm.callback.data['fitnessSlide'][i][x], res.algorithm.callback.data['fitnessDiscrete'][i][x], res.algorithm.callback.data['fitnessBlockages'][i][x]])
-                if config['debug']:
-                    print("> pop_info_level.CSV appended")
-
-            # GEN LEVEL
-            fieldnames = ['seed', 'gen', 'worst', 'avg', 'best', 'std', 'gen_std']
-            if (not (os.path.isfile(subRootSavePath + 'gen_info_level.csv'))):
-                with open(subRootSavePath + 'gen_info_level.csv', 'w') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(fieldnames)
-                    for i in range(len(res.algorithm.callback.data['best'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
-                                         res.algorithm.callback.data['worst'][i], res.algorithm.callback.data['avg'][i],
-                                         res.algorithm.callback.data['best'][i], res.algorithm.callback.data['std'][i],
-                                         res.algorithm.callback.data['gen_std'][i]])
-                if config['debug']:
-                    print("> gen_info_level.CSV created")
-            else:
-                with open(subRootSavePath + 'gen_info_level.csv', 'a') as csvfile:
-                    writer = csv.writer(csvfile)
-                    for i in range(len(res.algorithm.callback.data['best'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
-                                         res.algorithm.callback.data['worst'][i], res.algorithm.callback.data['avg'][i],
-                                         res.algorithm.callback.data['best'][i], res.algorithm.callback.data['std'][i],
-                                         res.algorithm.callback.data['gen_std'][i]])
-                if config['debug']:
-                    print("> gen_info_level.CSV appended")
-
-            # 15. Save data about the performances time by generation for diferent granularities: simul ind, eval ind {min, max, avg, std} eval pop {walltime, cputime}
-            fieldnames = ['seed', 'gen', 'wallTimeSimulIndMin', 'wallTimeSimulIndMax', 'wallTimeSimulIndAvg',
-                          'wallTimeSimulIndStd', 'procTimeSimulIndMin', 'procTimeSimulIndMax', 'procTimeSimulIndAvg',
-                          'procTimeSimulIndStd', 'wallTimeEvalIndMin', 'wallTimeEvalIndMax', 'wallTimeEvalIndAvg',
-                          'wallTimeEvalIndStd', 'procTimeEvalIndMin', 'procTimeEvalIndMax', 'procTimeEvalIndAvg',
-                          'procTimeEvalIndStd']
-            if (not (os.path.isfile(subRootSavePath + 'time_info_gen.csv'))):
-                with open(subRootSavePath + 'time_info_gen.csv', 'w') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(fieldnames)
-                    for i in range(len(res.algorithm.callback.data['gen'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndMin'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndMax'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndAvg'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndStd'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndMin'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndMax'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndAvg'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndStd'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndMin'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndMax'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndAvg'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndStd'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndMin'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndMax'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndAvg'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndStd'][i]])
-                if config['debug']:
-                    print("> representatives.CSV created")
-            else:
-                with open(subRootSavePath + 'time_info_gen.csv', 'a') as csvfile:
-                    writer = csv.writer(csvfile)
-                    for i in range(len(res.algorithm.callback.data['gen'])):
-                        writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndMin'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndMax'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndAvg'][i],
-                                         res.algorithm.callback.data['wallTimeSimulIndStd'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndMin'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndMax'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndAvg'][i],
-                                         res.algorithm.callback.data['procTimeSimulIndStd'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndMin'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndMax'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndAvg'][i],
-                                         res.algorithm.callback.data['wallTimeEvalIndStd'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndMin'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndMax'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndAvg'][i],
-                                         res.algorithm.callback.data['procTimeEvalIndStd'][i]])
-                if config['debug']:
-                    print("> time_info_gen.CSV appended")
+            # fieldnames = ['seed', 'n_evals', 'opt']
+            # if (not (os.path.isfile(subRootSavePath + 'convergence.csv'))):
+            #     with open(subRootSavePath + 'convergence.csv', 'w') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         writer.writerow(fieldnames)
+            #         for i in range(len(res.algorithm.callback.data['n_evals'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['n_evals'][i],
+            #                              res.algorithm.callback.data['opt'][i][0]])
+            #
+            #     if config['debug']:
+            #         print("> convergence.CSV created")
+            # else:
+            #     with open(subRootSavePath + 'convergence.csv', 'a') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         for i in range(len(res.algorithm.callback.data['n_evals'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['n_evals'][i],
+            #                              res.algorithm.callback.data['opt'][i][0]])
+            #     if config['debug']:
+            #         print("> convergence.CSV appended")
+            #
+            #         # POP LEVEL
+            # fieldnames = ['seed', 'gen', 'nfe', 'individuals', 'fitness', 'fitnessTime', 'fitnessSlide',
+            #               'fitnessDiscrete', 'fitnessBlockages', 'fitnessCycleHS', 'wallTimeSimul', 'cpuTimeSimul',
+            #               'wallTimeEval', 'cpuTimeEval']
+            # if (not (os.path.isfile(subRootSavePath + 'pop_info_level.csv'))):
+            #     with open(subRootSavePath + 'pop_info_level.csv', 'w') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         writer.writerow(fieldnames)
+            #         nfe = 0
+            #         # for pop in pops
+            #         for i in range(len(res.algorithm.callback.data['individuals'])):
+            #             # assert len(set(res.algorithm.callback.data['fitness'][i].flatten())) == len(res.algorithm.callback.data['fitness'][i])
+            #             # for ind in individuals
+            #             for x in range(len(res.algorithm.callback.data['individuals'][i])):
+            #                 nfe += 1
+            #                 # wallTimeSimulInd = None
+            #                 # try:
+            #                 #     wallTimeSimulInd = res.algorithm.callback.data['wallTimeSimulInd'][i][x][0]
+            #                 # except IndexError:
+            #                 #     wallTimeSimulInd = res.algorithm.callback.data['wallTimeSimulInd'][i][x]
+            #                 # a = [w for w in range(len(res.algorithm.callback.data['fitness'][i])) if res.algorithm.callback.data['fitnessTime'][i][w] + res.algorithm.callback.data['fitnessSlide'][i][w] + res.algorithm.callback.data['fitnessDiscrete'][i][w] + res.algorithm.callback.data['fitnessBlockages'][i][w] in res.algorithm.callback.data['fitness'][i]]
+            #                 # print(a)
+            #                 writer.writerow([numSeed, res.algorithm.callback.data['gen'][i], nfe,
+            #                                  res.algorithm.callback.data['individuals'][i][x].tolist(),
+            #                                  res.algorithm.callback.data['fitness'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessTime'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessSlide'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessDiscrete'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessBlockages'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessCycleHS'][i][x][0],
+            #                                  res.algorithm.callback.data['wallTimeSimulInd'][i][x][0],
+            #                                  res.algorithm.callback.data['procTimeSimulInd'][i][x][0],
+            #                                  res.algorithm.callback.data['wallTimeEvalInd'][i][x][0],
+            #                                  res.algorithm.callback.data['procTimeEvalInd'][i][x][0]])
+            #     if config['debug']:
+            #         print("> pop_info_level.CSV created")
+            # else:
+            #     with open(subRootSavePath + 'pop_info_level.csv', 'a') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         nfe = 0
+            #         for i in range(len(res.algorithm.callback.data['individuals'])):
+            #             # for ind in individuals
+            #             for x in range(len(res.algorithm.callback.data['individuals'][i])):
+            #                 nfe += 1
+            #                 writer.writerow([numSeed, res.algorithm.callback.data['gen'][i], nfe,
+            #                                  res.algorithm.callback.data['individuals'][i][x].tolist(),
+            #                                  res.algorithm.callback.data['fitness'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessTime'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessSlide'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessDiscrete'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessBlockages'][i][x][0],
+            #                                  res.algorithm.callback.data['fitnessCycleHS'][i][x][0],
+            #                                  res.algorithm.callback.data['wallTimeSimulInd'][i][x],
+            #                                  res.algorithm.callback.data['procTimeSimulInd'][i][x],
+            #                                  res.algorithm.callback.data['wallTimeEvalInd'][i][x],
+            #                                  res.algorithm.callback.data['procTimeEvalInd'][i][x]])
+            #     #     for i in range(len(res.algorithm.callback.data['individuals'])):
+            #     #         for x in range(len(res.algorithm.callback.data['individuals'][i])):
+            #     #             nfe+=1
+            #     #             writer.writerow([NUM_SEED, res.algorithm.callback.data['gen'][i], nfe, res.algorithm.callback.data['individuals'][i][x], res.algorithm.callback.data['fitness'][i][x],res.algorithm.callback.data['fitnessTime'][i][x], res.algorithm.callback.data['fitnessSlide'][i][x], res.algorithm.callback.data['fitnessDiscrete'][i][x], res.algorithm.callback.data['fitnessBlockages'][i][x]])
+            #     if config['debug']:
+            #         print("> pop_info_level.CSV appended")
+            #
+            # # GEN LEVEL
+            # fieldnames = ['seed', 'gen', 'worst', 'avg', 'best', 'std', 'gen_std']
+            # if (not (os.path.isfile(subRootSavePath + 'gen_info_level.csv'))):
+            #     with open(subRootSavePath + 'gen_info_level.csv', 'w') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         writer.writerow(fieldnames)
+            #         for i in range(len(res.algorithm.callback.data['best'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
+            #                              res.algorithm.callback.data['worst'][i], res.algorithm.callback.data['avg'][i],
+            #                              res.algorithm.callback.data['best'][i], res.algorithm.callback.data['std'][i],
+            #                              res.algorithm.callback.data['gen_std'][i]])
+            #     if config['debug']:
+            #         print("> gen_info_level.CSV created")
+            # else:
+            #     with open(subRootSavePath + 'gen_info_level.csv', 'a') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         for i in range(len(res.algorithm.callback.data['best'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
+            #                              res.algorithm.callback.data['worst'][i], res.algorithm.callback.data['avg'][i],
+            #                              res.algorithm.callback.data['best'][i], res.algorithm.callback.data['std'][i],
+            #                              res.algorithm.callback.data['gen_std'][i]])
+            #     if config['debug']:
+            #         print("> gen_info_level.CSV appended")
+            #
+            # # 15. Save data about the performances time by generation for diferent granularities: simul ind, eval ind {min, max, avg, std} eval pop {walltime, cputime}
+            # fieldnames = ['seed', 'gen', 'wallTimeSimulIndMin', 'wallTimeSimulIndMax', 'wallTimeSimulIndAvg',
+            #               'wallTimeSimulIndStd', 'procTimeSimulIndMin', 'procTimeSimulIndMax', 'procTimeSimulIndAvg',
+            #               'procTimeSimulIndStd', 'wallTimeEvalIndMin', 'wallTimeEvalIndMax', 'wallTimeEvalIndAvg',
+            #               'wallTimeEvalIndStd', 'procTimeEvalIndMin', 'procTimeEvalIndMax', 'procTimeEvalIndAvg',
+            #               'procTimeEvalIndStd']
+            # if (not (os.path.isfile(subRootSavePath + 'time_info_gen.csv'))):
+            #     with open(subRootSavePath + 'time_info_gen.csv', 'w') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         writer.writerow(fieldnames)
+            #         for i in range(len(res.algorithm.callback.data['gen'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndMin'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndMax'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndAvg'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndStd'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndMin'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndMax'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndAvg'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndStd'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndMin'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndMax'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndAvg'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndStd'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndMin'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndMax'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndAvg'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndStd'][i]])
+            #     if config['debug']:
+            #         print("> representatives.CSV created")
+            # else:
+            #     with open(subRootSavePath + 'time_info_gen.csv', 'a') as csvfile:
+            #         writer = csv.writer(csvfile)
+            #         for i in range(len(res.algorithm.callback.data['gen'])):
+            #             writer.writerow([numSeed, res.algorithm.callback.data['gen'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndMin'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndMax'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndAvg'][i],
+            #                              res.algorithm.callback.data['wallTimeSimulIndStd'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndMin'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndMax'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndAvg'][i],
+            #                              res.algorithm.callback.data['procTimeSimulIndStd'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndMin'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndMax'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndAvg'][i],
+            #                              res.algorithm.callback.data['wallTimeEvalIndStd'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndMin'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndMax'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndAvg'][i],
+            #                              res.algorithm.callback.data['procTimeEvalIndStd'][i]])
+            #     if config['debug']:
+            #         print("> time_info_gen.CSV appended")
 
             # 16. Plot the monotonic convergence curve
             plt.title("Convergence")
