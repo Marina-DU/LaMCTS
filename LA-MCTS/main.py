@@ -1,8 +1,11 @@
+import sys
+
 import utils.utils as utils
 from random import seed, uniform
 import numpy as np
 from simulator.simulator import Simulator
 from eval.eval import f_objective
+from functions.functions import testHgrn, circadianClock, cellCycleBehaegel
 
 if __name__ == '__main__':
 
@@ -13,6 +16,7 @@ if __name__ == '__main__':
     simulator = Simulator(variables, initialHybridState, BK)
 
     allCelerities = simulator.getAllCelerities()
+
 
     nbOfVariables = len(allCelerities)
     print("Number of celerities in the simulator:", nbOfVariables)

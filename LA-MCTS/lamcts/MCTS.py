@@ -267,12 +267,14 @@ class MCTS:
                     samples, values = leaf.propose_sample_de(path, self.func, self.solver_evals, self.de_type)
                 elif self.solver_type == 'pso':
                     samples, values = leaf.propose_samples_pso(self.solver_evals, path, self.func, self.pso_pop_size)
+                elif self.solver_type == 'ga':
+                    samples, values = leaf.propose_samples_ga(path, self.func, self.solver_evals)
                 else:
                     raise Exception("solver not implemented")
                 for idx in range(0, len(samples)):
                     if self.solver_type == 'bo':
                         value = self.collect_samples(samples[idx])
-                    elif self.solver_type == 'turbo' or self.solver_type == 'de' or self.solver_type == 'pso':
+                    elif self.solver_type == 'turbo' or self.solver_type == 'de' or self.solver_type == 'pso' or self.solver_type == 'ga':
                         value = self.collect_samples(samples[idx], values[idx])
                     else:
                         raise Exception("solver not implemented")

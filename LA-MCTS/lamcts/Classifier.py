@@ -23,6 +23,7 @@ from matplotlib import cm
 from turbo_1.turbo_1 import Turbo1
 from diffevo import de_simple
 from pso import particle
+from ga import ga_sampling
 
 
 # the input will be samples!
@@ -368,6 +369,13 @@ class Classifier():
 
         return proposed_x, fx
 
+    def propose_sample_ga(self, func, path, num_samples, samples, samples_ev):
+        assert path is not None and len(path) >= 0
+
+        proposed_x, fx = ga_sampling.ga_reproduction_sampling(samples, samples_ev, func, func.lb, func.ub, num_samples)
+        fx = fx * -1
+
+        return proposed_x, fx
     ###########################
     # sampling with turbo
     ###########################
